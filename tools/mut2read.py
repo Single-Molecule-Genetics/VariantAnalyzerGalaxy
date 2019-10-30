@@ -28,15 +28,15 @@ import pysam
 
 def make_argparser():
     parser = argparse.ArgumentParser(description='Takes a tabular file with mutations and a BAM file as input and prints all tags of reads that carry the mutation to a user specified output file and creates a fastq file of reads of tags with mutation.')
-    parser.add_argument('mutFile',
+    parser.add_argument('--mutFile',
                         help='TABULAR file with DCS mutations.')
-    parser.add_argument('bamFile',
+    parser.add_argument('--bamFile',
                         help='BAM file with aligned DCS reads.')
-    parser.add_argument('familiesFile',
+    parser.add_argument('--familiesFile',
                         help='TABULAR file with aligned families.')
-    parser.add_argument('outputFastq',
+    parser.add_argument('--outputFastq',
                         help='Output FASTQ file of reads with mutations.')
-    parser.add_argument('outputJson',
+    parser.add_argument('--outputJson',
                         help='Output JSON file to store collected data.')
     return parser
 
@@ -68,6 +68,7 @@ def mut2read(argv):
         mut_array = np.genfromtxt(mut, skip_header=1, delimiter='\t', comments='#', dtype='string')
 
     # read dcs bam file
+    pysam.index(file2)
     bam = pysam.AlignmentFile(file2, "rb")
 
     # get tags

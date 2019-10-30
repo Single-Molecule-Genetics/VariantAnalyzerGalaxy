@@ -29,11 +29,11 @@ import pysam
 
 def make_argparser():
     parser = argparse.ArgumentParser(description='Takes a tabular file with mutations and a BAM file as input and prints all tags of reads that carry the mutation to a user specified output file.')
-    parser.add_argument('mutFile',
+    parser.add_argument('--mutFile',
                         help='TABULAR file with DCS mutations.')
-    parser.add_argument('bamFile',
+    parser.add_argument('--bamFile',
                         help='BAM file with aligned SSCS reads.')
-    parser.add_argument('outputJson',
+    parser.add_argument('--outputJson',
                         help='Output JSON file to store SSCS counts.')
     return parser
 
@@ -59,6 +59,7 @@ def mut2sscs(argv):
         mut_array = np.genfromtxt(mut, skip_header=1, delimiter='\t', comments='#', dtype='string')
 
     # 2 read SSCS bam file
+    pysam.index(file2)
     bam = pysam.AlignmentFile(file2, "rb")
 
     # get tags
