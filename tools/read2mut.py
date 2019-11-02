@@ -29,7 +29,7 @@ import os
 import pysam
 import itertools
 import operator
-from pathlib import Path
+# from pathlib import Path
 import xlsxwriter
 
 
