@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tool id="mut2tag" name="DCS mutations to tags:" version="1.0.0" profile="19.01">
+<tool id="mut2read" name="DCS mutations to tags/reads:" version="1.0.0" profile="19.01">
     <description>Extracts all tags that carry a mutation in the duplex consensus sequence (DCS)</description>
     <macros>
         <import>va_macros.xml</import>
@@ -20,7 +20,7 @@ python '$__tool_directory__/mut2read.py'
     <inputs>
         <param name="file1" type="data" format="tabular" label="DCS Mutation File" optional="false" help="TABULAR file with DCS mutations. See Help section below for a detailed explanation."/>
         <param name="file2" type="data" format="bam" label="DCS BAM File" optional="false" help="BAM file with aligned DCS reads."/>
-        <param name="file3" type="data" format="tabular" label="Aligned FamiliesFile" optional="false" help="TABULAR file with aligned families."/>
+        <param name="file3" type="data" format="tabular" label="Aligned Families File" optional="false" help="TABULAR file with aligned families."/>
     </inputs>
     <outputs>
         <data name="output_fastq" format="fastq" label="${tool.name} on ${on_string}: FASTQ"/>

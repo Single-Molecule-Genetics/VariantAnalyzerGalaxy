@@ -14,8 +14,9 @@ Version  Date        Author             Description
 =======  ==========  =================  ================================
 
 
-USAGE: python read2mut.py DCS_Mutations.tabular Interesting_Reads.trim.bam tag_count_dict.pkl
-                          SSCS_counts.pkl mutant_reads_summary_short_trim.txt --thresh 10
+USAGE: python read2mut.py --mutFile DCS_Mutations.tabular --bamFile Interesting_Reads.trim.bam
+                          --inputJson tag_count_dict.json --sscsJson SSCS_counts.json
+                          --outputFile mutant_reads_summary_short_trim.xlsx --thresh 10 --phred 20
 
 """
 
@@ -29,21 +30,20 @@ import os
 import pysam
 import itertools
 import operator
-# from pathlib import Path
 import xlsxwriter
 
 
 def make_argparser():
     parser = argparse.ArgumentParser(description='Takes a tabular file with mutations, a BAM file and JSON files as input and prints stats about variants to a user specified output file.')
-    parser.add_argument('mutFile',
+    parser.add_argument('--mutFile',
                         help='TABULAR file with DCS mutations.')
-    parser.add_argument('bamFile',
+    parser.add_argument('--bamFile',
                         help='BAM file with aligned raw reads of selected tags (FASTQ created by mut2read.py - trimming with Trimmomatic - alignment with bwa).')
-    parser.add_argument('inputJson',
+    parser.add_argument('--inputJson',
                         help='JSON file with data collected by mut2read.py.')
-    parser.add_argument('sscsJson',
+    parser.add_argument('--sscsJson',
                         help='JSON file with SSCS counts collected by mut2sscs.py.')
-    parser.add_argument('outputFile',
+    parser.add_argument('--outputFile',
                         help='Output xlsx file of mutation details.')
     parser.add_argument('--thresh', type=int, default=0,
                         help='Integer threshold for displaying mutations. Only mutations occuring less than thresh times are displayed. Default of 0 displays all.')
@@ -91,6 +91,7 @@ def read2mut(argv):
         (mut_pos_dict, ref_pos_dict) = json.load(f)
 
     # 3. read bam file
+    pysam.index(file2)
     bam = pysam.AlignmentFile(file2, "rb")
 
     # 4. create mut_dict
