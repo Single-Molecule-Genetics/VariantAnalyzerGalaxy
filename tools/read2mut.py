@@ -166,8 +166,8 @@ def read2mut(argv):
                     else:
                         count_indel += 1
 
-        print("coverage at pos %s = %s, ref = %s, alt = %s, other bases = %s, N = %s, indel = %s, low quality = %s\n"
-               % (pileupcolumn.pos, count_ref + count_alt, count_ref, count_alt, count_other, count_n, count_indel,
+                print("coverage at pos %s = %s, ref = %s, alt = %s, other bases = %s, N = %s, indel = %s, low quality = %s\n"
+                      % (pileupcolumn.pos, count_ref + count_alt, count_ref, count_alt, count_other, count_n, count_indel,
                   count_lowq))
 
     for read in bam.fetch(until_eof=True):
