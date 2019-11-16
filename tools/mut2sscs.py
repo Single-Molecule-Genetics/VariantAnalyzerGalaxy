@@ -49,19 +49,17 @@ def mut2sscs(argv):
     sscs_counts_json = args.outputJson
 
     if os.path.isfile(file1) is False:
-        print("Error: Could not find '{}'".format(file1))
-        exit(0)
+        sys.exit("Error: Could not find '{}'".format(file1))
 
     if os.path.isfile(file2) is False:
-        print("Error: Could not find '{}'".format(file2))
-        exit(1)
+        sys.exit("Error: Could not find '{}'".format(file2))
 
     # 1. read mut file
     with open(file1, 'r') as mut:
         mut_array = np.genfromtxt(mut, skip_header=1, delimiter='\t', comments='#', dtype='string')
 
     # 2 read SSCS bam file
-    pysam.index(file2)
+    # pysam.index(file2)
     bam = pysam.AlignmentFile(file2, "rb")
 
     # get tags
@@ -127,7 +125,7 @@ def mut2sscs(argv):
     bam.close()
 
     # save counts
-    with open(sscs_counts_json, "wb") as f:
+    with open(sscs_counts_json, "w") as f:
         json.dump((mut_pos_dict, ref_pos_dict), f)
 
 

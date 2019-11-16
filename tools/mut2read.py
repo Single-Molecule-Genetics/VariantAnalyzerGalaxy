@@ -53,27 +53,23 @@ def mut2read(argv):
     json_file = args.outputJson
 
     if os.path.isfile(file1) is False:
-        print("Error: Could not find '{}'".format(file1))
-        exit(0)
+        sys.exit("Error: Could not find '{}'".format(file1))
 
     if os.path.isfile(file2) is False:
-        print("Error: Could not find '{}'".format(file2))
-        exit(1)
+        sys.exit("Error: Could not find '{}'".format(file2))
 
     if os.path.isfile(file3) is False:
-        print("Error: Could not find '{}'".format(file3))
-        exit(2)
+        sys.exit("Error: Could not find '{}'".format(file3))
 
     # read mut file
     with open(file1, 'r') as mut:
         mut_array = np.genfromtxt(mut, skip_header=1, delimiter='\t', comments='#', dtype='string')
 
     # read dcs bam file
-    pysam.index(file2)
+    # pysam.index(file2)
     bam = pysam.AlignmentFile(file2, "rb")
 
     # get tags
-    mut_tags = []
     tag_dict = {}
     cvrg_dict = {}
 
@@ -109,7 +105,6 @@ def mut2read(argv):
                         if nuc == alt:
                             count_alt += 1
                             tag = pileupread.alignment.query_name
-                            mut_tags.append(tag)
                             if tag in tag_dict:
                                 tag_dict[tag][chrom_stop_pos] = alt
                             else:
@@ -133,7 +128,7 @@ def mut2read(argv):
                        count_indel, count_lowq, dcs_median))
     bam.close()
 
-    with open(json_file, "wb") as f:
+    with open(json_file, "w") as f:
         json.dump((tag_dict, cvrg_dict), f)
 
     # create fastq from aligned reads
@@ -144,7 +139,7 @@ def mut2read(argv):
                 splits = line.split('\t')
                 tag = splits[0]
 
-                if tag in mut_tags:
+                if tag in tag_dict:
                     str1 = splits[4]
                     curr_seq = str1.replace("-", "")
                     str2 = splits[5]
