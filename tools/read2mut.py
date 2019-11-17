@@ -16,7 +16,7 @@ Version  Date        Author             Description
 
 USAGE: python read2mut.py --mutFile DCS_Mutations.tabular --bamFile Interesting_Reads.trim.bam
                           --inputJson tag_count_dict.json --sscsJson SSCS_counts.json
-                          --outputFile mutant_reads_summary_short_trim.xlsx --thresh 10 --phred 20
+                          --outputFile mutant_reads_summary_short_trim.xlsx --thresh 10 --phred 20 --trim 10
 
 """
 
@@ -51,8 +51,13 @@ def make_argparser():
                         help='Integer threshold for displaying mutations. Only mutations occuring less than thresh times are displayed. Default of 0 displays all.')
     parser.add_argument('--phred', type=int, default=20,
                         help='Integer threshold for Phred score. Only reads higher than this threshold are considered. Default 20.')
+    parser.add_argument('--trim', type=int, default=10,
+                        help='Integer threshold for assigning mutations at start and end of reads to lower tier. Default 10.')
     return parser
 
+def safe_div(x, y):
+    if y == 0: return None
+    return x / y
 
 def read2mut(argv):
     parser = make_argparser()
@@ -64,6 +69,7 @@ def read2mut(argv):
     outfile = args.outputFile
     thresh = args.thresh
     phred_score = args.phred
+    trim = args.trim
 
     if os.path.isfile(file1) is False:
         sys.exit("Error: Could not find '{}'".format(file1))
@@ -72,9 +78,11 @@ def read2mut(argv):
     if os.path.isfile(json_file) is False:
         sys.exit("Error: Could not find '{}'".format(json_file))
     if thresh < 0:
-        sys.exit("Error: Thresh is '{}', but only non-negative integers allowed".format(thresh))
+        sys.exit("Error: thresh is '{}', but only non-negative integers allowed".format(thresh))
     if phred_score < 0:
-        sys.exit("Error: Phred is '{}', but only non-negative integers allowed".format(phred_score))
+        sys.exit("Error: phred is '{}', but only non-negative integers allowed".format(phred_score))
+    if trim < 0:
+        sys.exit("Error: trim is '{}', but only non-negative integers allowed".format(thresh))
 
     # 1. read mut file
     with open(file1, 'r') as mut:
@@ -137,11 +145,11 @@ def read2mut(argv):
                         else:
                             mut_dict[chrom_stop_pos][tag][nuc] = 1
                         if tag not in mut_read_pos_dict[chrom_stop_pos]:
-                            mut_read_pos_dict[chrom_stop_pos][tag] = np.array(pileupread.query_position)
+                            mut_read_pos_dict[chrom_stop_pos][tag] = np.array(pileupread.query_position) + 1
                             reads_dict[chrom_stop_pos][tag] = len(pileupread.alignment.query_sequence)
                         else:
                             mut_read_pos_dict[chrom_stop_pos][tag] = np.append(
-                                mut_read_pos_dict[chrom_stop_pos][tag], pileupread.query_position)
+                                mut_read_pos_dict[chrom_stop_pos][tag], pileupread.query_position + 1)
                             reads_dict[chrom_stop_pos][tag] = np.append(
                                 reads_dict[chrom_stop_pos][tag], len(pileupread.alignment.query_sequence))
 
@@ -226,13 +234,13 @@ def read2mut(argv):
     format2 = workbook.add_format({'bg_color': '#FFC7CE'})  # red
     format3 = workbook.add_format({'bg_color': '#FACC2E'})  # yellow
 
-    header_line = ('tag', 'mate', 'chr', 'pos', 'read pos.ab', 'read pos.ba', 'read median length.ab',
-                   'read median length.ba', 'DCS median length', 'ref', 'alt',
+    header_line = ('variant ID', 'tier', 'tag', 'mate', 'read pos.ab', 'read pos.ba', 'read median length.ab',
+                   'read median length.ba', 'DCS median length',
                    'FS.ab', 'FS.ba', 'FSqc.ab', 'FSqc.ba', 'ref.ab', 'ref.ba', 'alt.ab', 'alt.ba',
                    'rel. ref.ab', 'rel. ref.ba', 'rel. alt.ab', 'rel. alt.ba',
                    'na.ab', 'na.ba', 'lowq.ab', 'lowq.ba',
                    'SSCS alt.ab', 'SSCS alt.ba', 'SSCS ref.ab', 'SSCS ref.ba',
-                   'other mut', 'tiers', 'chimeric tag', 'variant ID')
+                   'other mut','chimeric tag')
     ws1.write_row(0, 0, header_line)
 
     counter_tier11 = 0
@@ -243,7 +251,8 @@ def read2mut(argv):
     counter_tier24 = 0
     counter_tier31 = 0
     counter_tier32 = 0
-    counter_tier4 = 0
+    counter_tier41 = 0
+    counter_tier42 = 0
 
     row = 1
     tier_dict = {}
@@ -257,7 +266,7 @@ def read2mut(argv):
             dcs_median = cvrg_dict[key1][2]
 
             tier_dict[key1] = {}
-            values_tier_dict = [("tier 1.1", 0), ("tier 1.2", 0), ("tier 2.1", 0), ("tier 2.2", 0), ("tier 2.3", 0), ("tier 2.4", 0), ("tier 3.1", 0), ("tier 3.2", 0), ("tier 4", 0)]
+            values_tier_dict = [("tier 1.1", 0), ("tier 1.2", 0), ("tier 2.1", 0), ("tier 2.2", 0), ("tier 2.3", 0), ("tier 2.4", 0), ("tier 3.1", 0), ("tier 3.2", 0), ("tier 4.1", 0), ("tier 4.2", 0)]
             for k, v in values_tier_dict:
                 tier_dict[key1][k] = v
 
@@ -440,8 +449,8 @@ def read2mut(argv):
                         total4 = total4new = na4 = lowq4 = 0
                         ref4 = alt4 = ref4f = alt4f = 0
 
-                    read_pos1 = read_pos2 = read_pos3 = read_pos4 = "None"
-                    read_len_median1 = read_len_median2 = read_len_median3 = read_len_median4 = "None"
+                    read_pos1 = read_pos2 = read_pos3 = read_pos4 = -1
+                    read_len_median1 = read_len_median2 = read_len_median3 = read_len_median4 = 0
 
                     if key2[:-5] + '.ab.1' in mut_read_pos_dict[key1].keys():
                         read_pos1 = np.median(mut_read_pos_dict[key1][key2[:-5] + '.ab.1'])
@@ -460,25 +469,45 @@ def read2mut(argv):
                     counts_mut += 1
                     if (alt1f + alt2f + alt3f + alt4f) > 0.5:
                         if total1new == 0:
-                            ref1f = alt1f = "None"
+                            ref1f = alt1f = None
                             alt1ff = -1
                         else:
                             alt1ff = alt1f
                         if total2new == 0:
-                            ref2f = alt2f = "None"
+                            ref2f = alt2f = None
                             alt2ff = -1
                         else:
                             alt2ff = alt2f
                         if total3new == 0:
-                            ref3f = alt3f = "None"
+                            ref3f = alt3f = None
                             alt3ff = -1
                         else:
                             alt3ff = alt3f
                         if total4new == 0:
-                            ref4f = alt4f = "None"
+                            ref4f = alt4f = None
                             alt4ff = -1
                         else:
                             alt4ff = alt4f
+
+                        details1 = (total1, total4, total1new, total4new, ref1, ref4, alt1, alt4, ref1f, ref4f, alt1f, alt4f, na1, na4, lowq1, lowq4)
+                        details2 = (total2, total3, total2new, total3new, ref2, ref3, alt2, alt3, ref2f, ref3f, alt2f, alt3f, na2, na3, lowq2, lowq3)
+
+                        if ((read_pos1 <= trim) | (abs(read_len_median1 - read_pos1) <= trim)):
+                            total1new = 0
+                            trimmed = True
+
+                        if ((read_pos4 <= trim) | (abs(read_len_median4 - read_pos4) <= trim)):
+                            total4new = 0
+                            trimmed = True
+
+                        if ((read_pos2 <= trim) | (abs(read_len_median2 - read_pos2) <= trim)):
+                            total2new = 0
+                            trimmed = True
+
+                        if ((read_pos3 <= trim) | (abs(read_len_median3 - read_pos3) <= trim)):
+                            total3new = 0
+                            trimmed = True
+
                         chrom, pos = re.split(r'\#', key1)
                         # assign tiers
                         if ((all(int(ij) >= 3 for ij in [total1new, total4new]) &
@@ -547,10 +576,14 @@ def read2mut(argv):
                             tier = "3.2"
                             counter_tier32 += 1
                             tier_dict[key1]["tier 3.2"] += 1
+                        elif (trimmed):
+                            tier = "4.1"
+                            counter_tier41 += 1
+                            tier_dict[key1]["tier 4.1"] += 1
                         else:
-                            tier = "4"
-                            counter_tier4 += 1
-                            tier_dict[key1]["tier 4"] += 1
+                            tier = "4.2"
+                            counter_tier42 += 1
+                            tier_dict[key1]["tier 4.2"] += 1
 
                         var_id = '-'.join([chrom, pos, ref, alt])
                         sample_tag = key2[:-5]
@@ -621,33 +654,43 @@ def read2mut(argv):
                         else:
                             chimera = ""
 
-                        line = (key2[:-5], 'ab1.ba2', chrom, pos, read_pos1, read_pos4, read_len_median1, read_len_median4, dcs_median, ref, alt, total1, total4, total1new, total4new, ref1, ref4, alt1, alt4, ref1f, ref4f, alt1f, alt4f, na1, na4, lowq1, lowq4, sscs_mut_ab, sscs_mut_ba, sscs_ref_ab, sscs_ref_ba, add_mut14, tier, chimera, var_id)
+                        if (read_pos1 == -1):
+                            read_pos1 = read_len_median1 = None
+                        if (read_pos4 == -1):
+                            read_pos4 = read_len_median4 = None
+                        if (read_pos2 == -1):
+                            read_pos2 = read_len_median2 = None
+                        if (read_pos3 == -1):
+                            read_pos3 = read_len_median3 = None
+                        line = (var_id, tier, key2[:-5], 'ab1.ba2', read_pos1, read_pos4, read_len_median1, read_len_median4, dcs_median) + details1 + (sscs_mut_ab, sscs_mut_ba, sscs_ref_ab, sscs_ref_ba, add_mut14, chimera)
                         ws1.write_row(row, 0, line)
-                        line = (key2[:-5], 'ab2.ba1', chrom, pos, read_pos2, read_pos3, read_len_median2, read_len_median3, dcs_median, ref, alt, total2, total3, total2new, total3new, ref2, ref3, alt2, alt3, ref2f, ref3f, alt2f, alt3f, na2, na3, lowq2, lowq3, sscs_mut_ab, sscs_mut_ba, sscs_ref_ab, sscs_ref_ba, add_mut23, "", chimera, "")
+                        line = ("", "", key2[:-5], 'ab2.ba1', read_pos2, read_pos3, read_len_median2, read_len_median3, dcs_median) + details2 + (sscs_mut_ab, sscs_mut_ba, sscs_ref_ab, sscs_ref_ba, add_mut23, chimera)
                         ws1.write_row(row + 1, 0, line)
 
                         ws1.conditional_format('N{}:O{}'.format(row + 1, row + 2),
                                                {'type': 'formula',
-                                                'criteria': '=OR($AG${}="1.1", $AG${}="1.2")'.format(row + 1, row + 1),
+                                                'criteria': '=OR($B${}="1.1", $B${}="1.2")'.format(row + 1, row + 1),
                                                 'format': format1,
-                                                'multi_range': 'N{}:O{} V{}:W{} AG{}'.format(row + 1, row + 2, row + 1,
+                                                'multi_range': 'L{}:M{} T{}:U{} B{}'.format(row + 1, row + 2, row + 1,
                                                                                              row + 2, row + 1, row + 2)})
                         ws1.conditional_format('N{}:O{}'.format(row + 1, row + 2),
                                                {'type': 'formula',
-                                                'criteria': '=OR($AG${}="2.1",$AG${}="2.2", $AG${}="2.3", $AG${}="2.4")'.format(row + 1, row + 1, row + 1, row + 1), 'format': format3, 'multi_range': 'N{}:O{} V{}:W{} AG{}'.format(row + 1, row + 2, row + 1, row + 2, row + 1, row + 2)})
+                                                'criteria': '=OR($B${}="2.1",$B${}="2.2", $B${}="2.3", $B${}="2.4")'.format(row + 1, row + 1, row + 1, row + 1),
+                                                'format': format3,
+                                                'multi_range': 'L{}:M{} T{}:U{} B{}'.format(row + 1, row + 2, row + 1, row + 2, row + 1, row + 2)})
                         ws1.conditional_format('N{}:O{}'.format(row + 1, row + 2),
                                                {'type': 'formula',
-                                                'criteria': '=$AG${}>="3"'.format(row + 1),
+                                                'criteria': '=$B${}>="3"'.format(row + 1),
                                                 'format': format2,
-                                                'multi_range': 'N{}:O{} V{}:W{} AG{}'.format(row + 1, row + 2, row + 1, row + 2, row + 1, row + 2)})
+                                                'multi_range': 'L{}:M{} T{}:U{} B{}'.format(row + 1, row + 2, row + 1, row + 2, row + 1, row + 2)})
 
             row += 3
 
     # sheet 2
-    header_line2 = ('variant ID', 'cvrg', 'tiers', 'AF', 'cvrg.qc', 'tiers.qc', 'AF.qc', 'alt. allele (Du Novo)', 'AF (Du Novo)',
+    header_line2 = ('variant ID', 'cvrg', 'AC alt (all tiers)', 'AF  (all tiers)', 'cvrg (tiers 1.1-2.4)', 'AC alt (tiers 1.1-2.4)', 'AF (tiers 1.1-2.4)', 'AC alt (Du Novo)', 'AF (Du Novo)',
                     'tier 1.1', 'tier 1.2', 'tier 2.1', 'tier 2.2', 'tier 2.3', 'tier 2.4',
-                    'tier 3.1', 'tier 3.2', 'tier 4', 'AF 1.1-1.2', 'AF 1.1-2.1', 'AF 1.1-2.2',
-                    'AF 1.1-2.3', 'AF 1.1-2.4', 'AF 1.1-3.1', 'AF 1.1-3.2', 'AF 1.1-4')
+                    'tier 3.1', 'tier 3.2', 'tier 4.1', 'tier 4.2',  'AF 1.1-1.2', 'AF 1.1-2.1', 'AF 1.1-2.2',
+                    'AF 1.1-2.3', 'AF 1.1-2.4', 'AF 1.1-3.1', 'AF 1.1-3.2', 'AF 1.1-4.1', 'AF 1.1-4.2')
 
     ws2.write_row(0, 0, header_line2)
     row = 0
@@ -671,25 +714,23 @@ def read2mut(argv):
                 # calculate cummulative AF
                 used_tiers.append(value2)
                 if len(used_tiers) > 1:
-                    if (sum(used_tiers) + ref_count) != 0:
-                        cum = (sum(used_tiers) / cvrg)
-                    else:
-                        cum = 0
+                    cum = safe_div(sum(used_tiers), cvrg)
                     cum_af.append(cum)
-            lst.extend([sum(used_tiers), sum(used_tiers) / cvrg, (cvrg - sum(used_tiers[-3:])), sum(used_tiers[0:6]), sum(used_tiers[0:6]) / (cvrg - sum(used_tiers[-3:])), alt_count, alt_count / cvrg])
+            lst.extend([sum(used_tiers), safe_div(sum(used_tiers), cvrg), (cvrg - sum(used_tiers[-4:])), sum(used_tiers[0:6]), safe_div(sum(used_tiers[0:6]), (cvrg - sum(used_tiers[-4:]))), alt_count, safe_div(alt_count, cvrg)])
             lst.extend(used_tiers)
             lst.extend(cum_af)
             lst = tuple(lst)
             ws2.write_row(row + 1, 0, lst)
             ws2.conditional_format('C{}:F{}'.format(row + 2, row + 2), {'type': 'formula', 'criteria': '=$J$1="tier 1.1"', 'format': format1, 'multi_range': 'J{}:K{} J1:K1'.format(row + 2, row + 2)})
             ws2.conditional_format('G{}:N{}'.format(row + 2, row + 2), {'type': 'formula', 'criteria': '=$L$1="tier 2.1"', 'format': format3, 'multi_range': 'L{}:O{} L1:O1'.format(row + 2, row + 2)})
-            ws2.conditional_format('O{}:R{}'.format(row + 2, row + 2), {'type': 'formula', 'criteria': '=$P$1="tier 3.1"', 'format': format2, 'multi_range': 'P{}:R{} P1:R1'.format(row + 2, row + 2)})
+            ws2.conditional_format('O{}:S{}'.format(row + 2, row + 2), {'type': 'formula', 'criteria': '=$P$1="tier 3.1"', 'format': format2, 'multi_range': 'P{}:S{} P1:S1'.format(row + 2, row + 2)})
             row += 1
 
     # sheet 3
     sheet3 = [("tier 1.1", counter_tier11), ("tier 1.2", counter_tier12), ("tier 2.1", counter_tier21),
               ("tier 2.2", counter_tier22), ("tier 2.3", counter_tier23), ("tier 2.4", counter_tier24),
-              ("tier 3.1", counter_tier31), ("tier 3.2", counter_tier32), ("tier 4", counter_tier4)]
+              ("tier 3.1", counter_tier31), ("tier 3.2", counter_tier32),
+              ("tier 4.1", counter_tier41), ("tier 4.2", counter_tier42)]
 
     header = ("tier", "count")
     ws3.write_row(0, 0, header)
@@ -706,7 +747,7 @@ def read2mut(argv):
                                 'format': format3})
         ws3.conditional_format('A{}:B{}'.format(i + 2, i + 2),
                                {'type': 'formula',
-                                'criteria': '=OR($A${}="tier 3.1", $A${}="tier 3.2", $A${}="tier 4")'.format(i + 2, i + 2, i + 2),
+                                'criteria': '=OR($A${}="tier 3.1", $A${}="tier 3.2", $A${}="tier 4.1", $A${}="tier 4.2")'.format(i + 2, i + 2, i + 2, i + 2),
                                 'format': format2})
 
     description_tiers = [("Tier 1.1", "both ab and ba SSCS present (>75% of the sites with alternative base) and minimal FS>=3 for both SSCS in at least one mate"), ("", ""), ("Tier 1.2", "both ab and ba SSCS present (>75% of the sites with alt. base) and mate pair validation (min. FS=1) and minimal FS>=3 for at least one of the SSCS"), ("Tier 2.1", "both ab and ba SSCS present (>75% of the sites with alt. base) and minimal FS>=3 for at least one of the SSCS in at least one mate"), ("Tier 2.2", "both ab and ba SSCS present (>75% of the sites with alt. base) and mate pair validation (min. FS=1)"), ("Tier 2.3", "both ab and ba SSCS present (>75% of the sites with alt. base) and minimal FS=1 for both SSCS in one mate and minimal FS>=3 for at least one of the SSCS in the other mate"), ("Tier 2.4", "both ab and ba SSCS present (>75% of the sites with alt. base) and minimal FS=1 for both SSCS in one mate"), ("Tier 3.1", "both ab and ba SSCS present (>50% of the sites with alt. base) and recurring mutation on this position"), ("Tier 3.2", "both ab and ba SSCS present (>50% of the sites with alt. base) and minimal FS>=1 for both SSCS in at least one mate"), ("Tier 4", "remaining variants")]
