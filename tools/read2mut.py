@@ -33,7 +33,7 @@ import sys
 import numpy as np
 import pysam
 import xlsxwriter
-
+from cyvcf2 import VCF
 
 def make_argparser():
     parser = argparse.ArgumentParser(description='Takes a tabular file with mutations, a BAM file and JSON files as input and prints stats about variants to a user specified output file.')
@@ -87,94 +87,99 @@ def read2mut(argv):
     if trim < 0:
         sys.exit("Error: trim is '{}', but only non-negative integers allowed".format(thresh))
 
-    # 1. read mut file
-    with open(file1, 'r') as mut:
-        mut_array = np.genfromtxt(mut, skip_header=1, delimiter='\t', comments='#', dtype='string')
-
-    # 2. load dicts
+    # load dicts
     with open(json_file, "r") as f:
         (tag_dict, cvrg_dict) = json.load(f)
 
     with open(sscs_json, "r") as f:
         (mut_pos_dict, ref_pos_dict) = json.load(f)
 
-    # 3. read bam file
+    # read bam file
     # pysam.index(file2)
     bam = pysam.AlignmentFile(file2, "rb")
 
-    # 4. create mut_dict
+    # create mut_dict
     mut_dict = {}
     mut_read_pos_dict = {}
     mut_read_dict = {}
     reads_dict = {}
-    if mut_array.shape == (13, ):
-        mut_array = mut_array.reshape((1, len(mut_array)))
-
-    for m in range(0, len(mut_array[:, 0])):
-        print(str(m + 1) + " of " + str(len(mut_array[:, 0])))
-        #    for m in range(0, 5):
-        chrom = mut_array[m, 1]
-        stop_pos = mut_array[m, 2].astype(int)
+    i = 0
+    mut_array = []
+    
+    for variant in VCF(file1):
+        chrom = variant.CHROM
+        stop_pos = variant.start
         chrom_stop_pos = str(chrom) + "#" + str(stop_pos)
-        ref = mut_array[m, 9]
-        alt = mut_array[m, 10]
-        mut_dict[chrom_stop_pos] = {}
-        mut_read_pos_dict[chrom_stop_pos] = {}
-        reads_dict[chrom_stop_pos] = {}
+        ref = variant.REF
+        alt = variant.ALT[0]
+#        nc = variant.format('NC')
+        ad = variant.format('AD')
 
-        for pileupcolumn in bam.pileup(chrom.tobytes(), stop_pos - 2, stop_pos, max_depth=1000000000):
-            if pileupcolumn.reference_pos == stop_pos - 1:
-                count_alt = 0
-                count_ref = 0
-                count_indel = 0
-                count_n = 0
-                count_other = 0
-                count_lowq = 0
-                n = 0
-                print("unfiltered reads=", pileupcolumn.n, "filtered reads=", len(pileupcolumn.pileups),
-                      "difference= ", len(pileupcolumn.pileups) - pileupcolumn.n)
-                for pileupread in pileupcolumn.pileups:
-                    n += 1
-                    if not pileupread.is_del and not pileupread.is_refskip:
-                        tag = pileupread.alignment.query_name
-                        nuc = pileupread.alignment.query_sequence[pileupread.query_position]
-                        phred = ord(pileupread.alignment.qual[pileupread.query_position]) - 33
-                        if phred < phred_score:
-                            nuc = "lowQ"
-                        if tag not in mut_dict[chrom_stop_pos]:
-                            mut_dict[chrom_stop_pos][tag] = {}
-                        if nuc in mut_dict[chrom_stop_pos][tag]:
-                            mut_dict[chrom_stop_pos][tag][nuc] += 1
-                        else:
-                            mut_dict[chrom_stop_pos][tag][nuc] = 1
-                        if tag not in mut_read_pos_dict[chrom_stop_pos]:
-                            mut_read_pos_dict[chrom_stop_pos][tag] = np.array(pileupread.query_position) + 1
-                            reads_dict[chrom_stop_pos][tag] = len(pileupread.alignment.query_sequence)
-                        else:
-                            mut_read_pos_dict[chrom_stop_pos][tag] = np.append(
-                                mut_read_pos_dict[chrom_stop_pos][tag], pileupread.query_position + 1)
-                            reads_dict[chrom_stop_pos][tag] = np.append(
-                                reads_dict[chrom_stop_pos][tag], len(pileupread.alignment.query_sequence))
+#        print(str(chrom), str(ref), str(alt), nc)
+        print(str(chrom), stop_pos, str(ref), str(alt), ad)
+        
+        if len(ref) == len(alt):
+            mut_array[i] = [chrom, pos, ref, alt]
+            i += 1
+            mut_dict[chrom_stop_pos] = {}
+            mut_read_pos_dict[chrom_stop_pos] = {}
+            reads_dict[chrom_stop_pos] = {}
 
-                        if nuc == alt:
-                            count_alt += 1
-                            if tag not in mut_read_dict:
-                                mut_read_dict[tag] = {}
-                                mut_read_dict[tag][chrom_stop_pos] = alt
+            for pileupcolumn in bam.pileup(chrom.tobytes(), stop_pos - 2, stop_pos, max_depth=1000000000):
+                if pileupcolumn.reference_pos == stop_pos - 1:
+                    count_alt = 0
+                    count_ref = 0
+                    count_indel = 0
+                    count_n = 0
+                    count_other = 0
+                    count_lowq = 0
+                    n = 0
+                    print("unfiltered reads=", pileupcolumn.n, "filtered reads=", len(pileupcolumn.pileups),
+                          "difference= ", len(pileupcolumn.pileups) - pileupcolumn.n)
+                    for pileupread in pileupcolumn.pileups:
+                        n += 1
+                        if not pileupread.is_del and not pileupread.is_refskip:
+                            tag = pileupread.alignment.query_name
+                            nuc = pileupread.alignment.query_sequence[pileupread.query_position]
+                            phred = ord(pileupread.alignment.qual[pileupread.query_position]) - 33
+                            if phred < phred_score:
+                                nuc = "lowQ"
+                            if tag not in mut_dict[chrom_stop_pos]:
+                                mut_dict[chrom_stop_pos][tag] = {}
+                            if nuc in mut_dict[chrom_stop_pos][tag]:
+                                mut_dict[chrom_stop_pos][tag][nuc] += 1
                             else:
-                                mut_read_dict[tag][chrom_stop_pos] = alt
-                        elif nuc == ref:
-                            count_ref += 1
-                        elif nuc == "N":
-                            count_n += 1
-                        elif nuc == "lowQ":
-                            count_lowq += 1
-                        else:
-                            count_other += 1
-                    else:
-                        count_indel += 1
+                                mut_dict[chrom_stop_pos][tag][nuc] = 1
+                            if tag not in mut_read_pos_dict[chrom_stop_pos]:
+                                mut_read_pos_dict[chrom_stop_pos][tag] = np.array(pileupread.query_position) + 1
+                                reads_dict[chrom_stop_pos][tag] = len(pileupread.alignment.query_sequence)
+                            else:
+                                mut_read_pos_dict[chrom_stop_pos][tag] = np.append(
+                                    mut_read_pos_dict[chrom_stop_pos][tag], pileupread.query_position + 1)
+                                reads_dict[chrom_stop_pos][tag] = np.append(
+                                    reads_dict[chrom_stop_pos][tag], len(pileupread.alignment.query_sequence))
 
-                print("coverage at pos %s = %s, ref = %s, alt = %s, other bases = %s, N = %s, indel = %s, low quality = %s\n" % (pileupcolumn.pos, count_ref + count_alt, count_ref, count_alt, count_other, count_n, count_indel, count_lowq))
+                            if nuc == alt:
+                                count_alt += 1
+                                if tag not in mut_read_dict:
+                                    mut_read_dict[tag] = {}
+                                    mut_read_dict[tag][chrom_stop_pos] = alt
+                                else:
+                                    mut_read_dict[tag][chrom_stop_pos] = alt
+                            elif nuc == ref:
+                                count_ref += 1
+                            elif nuc == "N":
+                                count_n += 1
+                            elif nuc == "lowQ":
+                                count_lowq += 1
+                            else:
+                                count_other += 1
+                        else:
+                            count_indel += 1
+
+                    print("coverage at pos %s = %s, ref = %s, alt = %s, other bases = %s, N = %s, indel = %s, low quality = %s\n" % (pileupcolumn.pos, count_ref + count_alt, count_ref, count_alt, count_other, count_n, count_indel, count_lowq))
+        else:
+            print("indels are currently not evaluated")        
 
     for read in bam.fetch(until_eof=True):
         if read.is_unmapped:
@@ -195,9 +200,9 @@ def read2mut(argv):
     pure_tags_dict = {}
     for key1, value1 in sorted(mut_dict.items()):
         i = np.where(np.array(['#'.join(str(i) for i in z)
-                               for z in zip(mut_array[:, 1], mut_array[:, 2])]) == key1)[0][0]
-        ref = mut_array[i, 9]
-        alt = mut_array[i, 10]
+                               for z in zip(mut_array[:, 0], mut_array[:, 1])]) == key1)[0][0]
+        ref = mut_array[i, 2]
+        alt = mut_array[i, 3]
         pure_tags_dict[key1] = {}
         for key2, value2 in sorted(value1.items()):
             for key3, value3 in value2.items():
@@ -263,9 +268,9 @@ def read2mut(argv):
         counts_mut = 0
         if key1 in pure_tags_dict_short.keys():
             i = np.where(np.array(['#'.join(str(i) for i in z)
-                                   for z in zip(mut_array[:, 1], mut_array[:, 2])]) == key1)[0][0]
-            ref = mut_array[i, 9]
-            alt = mut_array[i, 10]
+                                   for z in zip(mut_array[:, 0], mut_array[:, 1])]) == key1)[0][0]
+            ref = mut_array[i, 2]
+            alt = mut_array[i, 3]
             dcs_median = cvrg_dict[key1][2]
 
             tier_dict[key1] = {}
@@ -706,9 +711,9 @@ def read2mut(argv):
     for key1, value1 in sorted(tier_dict.items()):
         if key1 in pure_tags_dict_short.keys():
             i = np.where(np.array(['#'.join(str(i) for i in z)
-                                   for z in zip(mut_array[:, 1], mut_array[:, 2])]) == key1)[0][0]
-            ref = mut_array[i, 9]
-            alt = mut_array[i, 10]
+                                   for z in zip(mut_array[:, 0], mut_array[:, 1])]) == key1)[0][0]
+            ref = mut_array[i, 2]
+            alt = mut_array[i, 3]
             chrom, pos = re.split(r'\#', key1)
             ref_count = cvrg_dict[key1][0]
             alt_count = cvrg_dict[key1][1]

@@ -72,7 +72,6 @@ def mut2sscs(argv):
 #        nc = variant.format('NC')
         ad = variant.format('AD')
 
-        dcs_len = []
 #        print(str(chrom), str(ref), str(alt), nc)
         print(str(chrom), stop_pos, str(ref), str(alt), ad)
 
