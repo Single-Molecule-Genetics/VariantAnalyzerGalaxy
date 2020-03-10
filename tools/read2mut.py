@@ -117,16 +117,16 @@ def read2mut(argv):
 
 #        print(str(chrom), str(ref), str(alt), nc)
         print(str(chrom), stop_pos, str(ref), str(alt), ad)
-        
         if len(ref) == len(alt):
-            mut_array[i] = [chrom, pos, ref, alt]
+            #mut_array[i] = [chrom, stop_pos, ref, alt]
+            mut_array.append([chrom, stop_pos, ref, alt])
             i += 1
             mut_dict[chrom_stop_pos] = {}
             mut_read_pos_dict[chrom_stop_pos] = {}
             reads_dict[chrom_stop_pos] = {}
 
-            for pileupcolumn in bam.pileup(chrom.tobytes(), stop_pos - 2, stop_pos, max_depth=1000000000):
-                if pileupcolumn.reference_pos == stop_pos - 1:
+            for pileupcolumn in bam.pileup(chrom, stop_pos - 1, stop_pos + 1, max_depth=100000000):
+                if pileupcolumn.reference_pos == stop_pos:
                     count_alt = 0
                     count_ref = 0
                     count_indel = 0
@@ -180,7 +180,7 @@ def read2mut(argv):
                     print("coverage at pos %s = %s, ref = %s, alt = %s, other bases = %s, N = %s, indel = %s, low quality = %s\n" % (pileupcolumn.pos, count_ref + count_alt, count_ref, count_alt, count_other, count_n, count_indel, count_lowq))
         else:
             print("indels are currently not evaluated")        
-
+    mut_array = np.array(mut_array)
     for read in bam.fetch(until_eof=True):
         if read.is_unmapped:
             pure_tag = read.query_name[:-5]
@@ -599,7 +599,7 @@ def read2mut(argv):
                             counter_tier42 += 1
                             tier_dict[key1]["tier 4.2"] += 1
 
-                        var_id = '-'.join([chrom, pos, ref, alt])
+                        var_id = '-'.join([chrom, str(int(pos)+1), ref, alt])
                         sample_tag = key2[:-5]
                         array2 = np.unique(whole_array)  # remove duplicate sequences to decrease running time
                         # exclude identical tag from array2, to prevent comparison to itself
@@ -719,7 +719,7 @@ def read2mut(argv):
             alt_count = cvrg_dict[key1][1]
             cvrg = ref_count + alt_count
 
-            var_id = '-'.join([chrom, pos, ref, alt])
+            var_id = '-'.join([chrom, str(int(pos)+1), ref, alt])
             lst = [var_id, cvrg]
             used_tiers = []
             cum_af = []
@@ -763,7 +763,7 @@ def read2mut(argv):
                                 'criteria': '=OR($A${}="tier 3.1", $A${}="tier 3.2", $A${}="tier 4.1", $A${}="tier 4.2")'.format(i + 2, i + 2, i + 2, i + 2),
                                 'format': format2})
 
-    description_tiers = [("Tier 1.1", "both ab and ba SSCS present (>75% of the sites with alternative base) and minimal FS>=3 for both SSCS in at least one mate"), ("", ""), ("Tier 1.2", "both ab and ba SSCS present (>75% of the sites with alt. base) and mate pair validation (min. FS=1) and minimal FS>=3 for at least one of the SSCS"), ("Tier 2.1", "both ab and ba SSCS present (>75% of the sites with alt. base) and minimal FS>=3 for at least one of the SSCS in at least one mate"), ("Tier 2.2", "both ab and ba SSCS present (>75% of the sites with alt. base) and mate pair validation (min. FS=1)"), ("Tier 2.3", "both ab and ba SSCS present (>75% of the sites with alt. base) and minimal FS=1 for both SSCS in one mate and minimal FS>=3 for at least one of the SSCS in the other mate"), ("Tier 2.4", "both ab and ba SSCS present (>75% of the sites with alt. base) and minimal FS=1 for both SSCS in at least one mate"), ("Tier 3.1", "both ab and ba SSCS present (>50% of the sites with alt. base) and recurring mutation on this position"), ("Tier 3.2", "both ab and ba SSCS present (>50% of the sites with alt. base) and minimal FS>=1 for both SSCS in at least one mate"), ("Tier 4.1", "variants at the start or end of the reads"), ("Tier 4.2", "remaining variants")]
+    description_tiers = [("Tier 1.1", "both ab and ba SSCS present (>75% of the sites with alternative base) and minimal FS>=3 for both SSCS in at least one mate"), ("", ""), ("Tier 1.2", "both ab and ba SSCS present (>75% of the sites with alt. base) and mate pair validation (min. FS=1) and minimal FS>=3 for at least one of the SSCS"), ("Tier 2.1", "both ab and ba SSCS present (>75% of the sites with alt. base) and minimal FS>=3 for at least one of the SSCS in at least one mate"), ("Tier 2.2", "both ab and ba SSCS present (>75% of the sites with alt. base) and mate pair validation (min. FS=1)"), ("Tier 2.3", "both ab and ba SSCS present (>75% of the sites with alt. base) and minimal FS=1 for both SSCS in one mate and minimal FS>=3 for at least one of the SSCS in the other mate"), ("Tier 2.4", "both ab and ba SSCS present (>75% of the sites with alt. base) and minimal FS=1 for both SSCS in at least one mate"), ("Tier 3.1", "both ab and ba SSCS present (>50% of the sites with alt. base) and recurring mutation on this position"), ("Tier 3.2", "both ab and ba SSCS present (>50% of the sites with alt. base) and minimal FS>=1 for both SSCS in at least one mate"), ("Tier 4.1", "variants at the start or end of the DCS (median position of the variant within the PE-reads forming the DCS)"), ("Tier 4.2", "remaining variants")]
     examples_tiers = [[("Chr5:5-20000-11068-C-G", "1.1", "AAAAAGATGCCGACTACCTT", "ab1.ba2", "254", "228", "287", "288", "289",
                         "3", "6", "3", "6", "0", "0", "3", "6", "0", "0", "1", "1", "0", "0", "0", "0",
                         "4081", "4098", "5", "10", "", ""),
@@ -773,7 +773,7 @@ def read2mut(argv):
                       [("Chr5:5-20000-11068-C-G", "1.1", "AAAAATGCGTAGAAATATGC", "ab1.ba2", "254", "228", "287", "288", "289",
                         "33", "43", "33", "43", "0", "0", "33", "43", "0", "0", "1", "1", "0", "0", "0",
                         "0", "4081", "4098", "5", "10", "", ""),
-                       ("", "", "AAAAATGCGTAGAAATATGC", "ab2.ba1", "11068", "268", "268", "270", "288", "289",
+                       ("", "", "AAAAATGCGTAGAAATATGC", "ab2.ba1", "268", "268", "270", "288", "289",
                         "11", "34", "10", "27", "0", "0", "10", "27", "0", "0", "1", "1", "0", "0", "1",
                         "7", "4081", "4098", "5", "10", "", "")],
                       [("Chr5:5-20000-10776-G-T", "1.2", "CTATGACCCGTGAGCCCATG", "ab1.ba2", "132", "132", "287", "288", "290",
