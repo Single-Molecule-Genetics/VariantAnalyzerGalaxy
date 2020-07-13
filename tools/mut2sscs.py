@@ -31,9 +31,9 @@ from cyvcf2 import VCF
 
 
 def make_argparser():
-    parser = argparse.ArgumentParser(description='Takes a tabular file with mutations and a BAM file as input and prints all tags of reads that carry the mutation to a user specified output file.')
+    parser = argparse.ArgumentParser(description='Takes a vcf file with mutations and a BAM file as input and prints all tags of reads that carry the mutation to a user specified output file.')
     parser.add_argument('--mutFile',
-                        help='TABULAR file with DCS mutations.')
+                        help='VCR file with DCS mutations.')
     parser.add_argument('--bamFile',
                         help='BAM file with aligned SSCS reads.')
     parser.add_argument('--outputJson',
@@ -72,9 +72,6 @@ def mut2sscs(argv):
 #        nc = variant.format('NC')
         ad = variant.format('AD')
 
-#        print(str(chrom), str(ref), str(alt), nc)
-        print(str(chrom), stop_pos, str(ref), str(alt), ad)
-
         if len(ref) == len(alt):
 
             for pileupcolumn in bam.pileup(chrom, stop_pos - 1, stop_pos + 1, max_depth=1000000000):
@@ -99,6 +96,10 @@ def mut2sscs(argv):
                                 else:
                                     mut_pos_dict[chrom_stop_pos] = {}
                                     mut_pos_dict[chrom_stop_pos][abba] = 1
+                                if chrom_stop_pos not in ref_pos_dict:
+                                    ref_pos_dict[chrom_stop_pos] = {}
+                                    ref_pos_dict[chrom_stop_pos][abba] = 0
+
                             elif pileupread.alignment.query_sequence[pileupread.query_position] == ref:
                                 count_ref += 1
                                 if chrom_stop_pos in ref_pos_dict:

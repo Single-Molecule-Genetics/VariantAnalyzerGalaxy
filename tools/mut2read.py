@@ -28,9 +28,9 @@ import pysam
 from cyvcf2 import VCF
 
 def make_argparser():
-    parser = argparse.ArgumentParser(description='Takes a tabular file with mutations and a BAM file as input and prints all tags of reads that carry the mutation to a user specified output file and creates a fastq file of reads of tags with mutation.')
+    parser = argparse.ArgumentParser(description='Takes a vcf file with mutations and a BAM file as input and prints all tags of reads that carry the mutation to a user specified output file and creates a fastq file of reads of tags with mutation.')
     parser.add_argument('--mutFile',
-                        help='TABULAR file with DCS mutations.')
+                        help='VCF file with DCS mutations.')
     parser.add_argument('--bamFile',
                         help='BAM file with aligned DCS reads.')
     parser.add_argument('--familiesFile',
@@ -79,9 +79,6 @@ def mut2read(argv):
         ad = variant.format('AD')
 
         dcs_len = []
-#        print(str(chrom), str(ref), str(alt), nc)
-        print(str(chrom), stop_pos, str(ref), str(alt), ad)
-
         if len(ref) == len(alt):
             for pileupcolumn in bam.pileup(chrom, stop_pos - 1, stop_pos + 1, max_depth=100000000):
 

@@ -36,9 +36,9 @@ import xlsxwriter
 from cyvcf2 import VCF
 
 def make_argparser():
-    parser = argparse.ArgumentParser(description='Takes a tabular file with mutations, a BAM file and JSON files as input and prints stats about variants to a user specified output file.')
+    parser = argparse.ArgumentParser(description='Takes a vcf file with mutations, a BAM file and JSON files as input and prints stats about variants to a user specified output file.')
     parser.add_argument('--mutFile',
-                        help='TABULAR file with DCS mutations.')
+                        help='VCF file with DCS mutations.')
     parser.add_argument('--bamFile',
                         help='BAM file with aligned raw reads of selected tags (FASTQ created by mut2read.py - trimming with Trimmomatic - alignment with bwa).')
     parser.add_argument('--inputJson',
@@ -115,10 +115,7 @@ def read2mut(argv):
 #        nc = variant.format('NC')
         ad = variant.format('AD')
 
-#        print(str(chrom), str(ref), str(alt), nc)
-        print(str(chrom), stop_pos, str(ref), str(alt), ad)
         if len(ref) == len(alt):
-            #mut_array[i] = [chrom, stop_pos, ref, alt]
             mut_array.append([chrom, stop_pos, ref, alt])
             i += 1
             mut_dict[chrom_stop_pos] = {}
@@ -246,7 +243,7 @@ def read2mut(argv):
                    'read median length.ba', 'DCS median length',
                    'FS.ab', 'FS.ba', 'FSqc.ab', 'FSqc.ba', 'ref.ab', 'ref.ba', 'alt.ab', 'alt.ba',
                    'rel. ref.ab', 'rel. ref.ba', 'rel. alt.ab', 'rel. alt.ba',
-                   'na.ab', 'na.ba', 'lowq.ab', 'lowq.ba',
+                   'na.ab', 'na.ba', 'lowq.ab', 'lowq.ba', 'trim.ab', 'trim.ba',
                    'SSCS alt.ab', 'SSCS alt.ba', 'SSCS ref.ab', 'SSCS ref.ba',
                    'other mut', 'chimeric tag')
     ws1.write_row(0, 0, header_line)
@@ -261,6 +258,7 @@ def read2mut(argv):
     counter_tier32 = 0
     counter_tier41 = 0
     counter_tier42 = 0
+    counter_tier5 = 0
 
     row = 1
     tier_dict = {}
@@ -274,7 +272,7 @@ def read2mut(argv):
             dcs_median = cvrg_dict[key1][2]
 
             tier_dict[key1] = {}
-            values_tier_dict = [("tier 1.1", 0), ("tier 1.2", 0), ("tier 2.1", 0), ("tier 2.2", 0), ("tier 2.3", 0), ("tier 2.4", 0), ("tier 3.1", 0), ("tier 3.2", 0), ("tier 4.1", 0), ("tier 4.2", 0)]
+            values_tier_dict = [("tier 1.1", 0), ("tier 1.2", 0), ("tier 2.1", 0), ("tier 2.2", 0), ("tier 2.3", 0), ("tier 2.4", 0), ("tier 3.1", 0), ("tier 3.2", 0), ("tier 4.1", 0), ("tier 4.2", 0), ("tier 5", 0)]
             for k, v in values_tier_dict:
                 tier_dict[key1][k] = v
 
@@ -339,6 +337,7 @@ def read2mut(argv):
                     else:
                         total1 = total1new = na1 = lowq1 = 0
                         ref1 = alt1 = ref1f = alt1f = 0
+                        k1 = []
 
                     if key2[:-5] + '.ab.2' in mut_dict[key1].keys():
                         total2 = sum(mut_dict[key1][key2[:-5] + '.ab.2'].values())
@@ -380,6 +379,7 @@ def read2mut(argv):
                     else:
                         total2 = total2new = na2 = lowq2 = 0
                         ref2 = alt2 = ref2f = alt2f = 0
+                        k2 = []
 
                     if key2[:-5] + '.ba.1' in mut_dict[key1].keys():
                         total3 = sum(mut_dict[key1][key2[:-5] + '.ba.1'].values())
@@ -497,28 +497,55 @@ def read2mut(argv):
                         else:
                             alt4ff = alt4f
 
-                        details1 = (total1, total4, total1new, total4new, ref1, ref4, alt1, alt4, ref1f, ref4f, alt1f, alt4f, na1, na4, lowq1, lowq4)
-                        details2 = (total2, total3, total2new, total3new, ref2, ref3, alt2, alt3, ref2f, ref3f, alt2f, alt3f, na2, na3, lowq2, lowq3)
+                        beg1 = beg4 = beg2 = beg3 = 0
+
+                        details1 = (total1, total4, total1new, total4new, ref1, ref4, alt1, alt4, ref1f, ref4f, alt1f, alt4f, na1, na4, lowq1, lowq4, beg1, beg4)
+                        details2 = (total2, total3, total2new, total3new, ref2, ref3, alt2, alt3, ref2f, ref3f, alt2f, alt3f, na2, na3, lowq2, lowq3, beg2, beg3)
+                        
                         trimmed = False
-                        if ((read_pos1 >= 0) and ((read_pos1 <= trim) | (abs(read_len_median1 - read_pos1) <= trim))):
-                            total1new = 0
+                        contradictory = False
+
+                        if ((all(float(ij) >= 0.5 for ij in [alt1ff, alt4ff]) & # contradictory variant
+                            all(float(ij) == 0. for ij in [alt2ff, alt3ff])) |
+                            (all(float(ij) >= 0.5 for ij in [alt2ff, alt3ff]) &
+                            all(float(ij) == 0. for ij in [alt1ff, alt4ff]))):
                             alt1ff = 0
-                            trimmed = True
-
-                        if ((read_pos4 >= 0) and ((read_pos4 <= trim) | (abs(read_len_median4 - read_pos4) <= trim))):
-                            total4new = 0
                             alt4ff = 0
-                            trimmed = True
-
-                        if ((read_pos2 >= 0) and ((read_pos2 <= trim) | (abs(read_len_median2 - read_pos2) <= trim))):
-                            total2new = 0
                             alt2ff = 0
-                            trimmed = True
-
-                        if ((read_pos3 >= 0) and ((read_pos3 <= trim) | (abs(read_len_median3 - read_pos3) <= trim))):
-                            total3new = 0
                             alt3ff = 0
-                            trimmed = True
+                            trimmed = False
+                            contradictory = True
+
+                        else:
+                            if ((read_pos1 >= 0) and ((read_pos1 <= trim) | (abs(read_len_median1 - read_pos1) <= trim))):
+                                beg1 = total1new
+                                total1new = 0
+                                alt1ff = 0
+                                alt1f = 0
+                                trimmed = True
+
+                            if ((read_pos4 >= 0) and ((read_pos4 <= trim) | (abs(read_len_median4 - read_pos4) <= trim))):
+                                beg4 = total4new
+                                total4new = 0
+                                alt4ff = 0
+                                alt4f = 0
+                                trimmed = True
+                            
+                            if ((read_pos2 >= 0) and ((read_pos2 <= trim) | (abs(read_len_median2 - read_pos2) <= trim))):
+                                beg2 = total2new
+                                total2new = 0
+                                alt2ff = 0
+                                alt2f = 0
+                                trimmed = True
+                                
+                            if ((read_pos3 >= 0) and ((read_pos3 <= trim) | (abs(read_len_median3 - read_pos3) <= trim))):
+                                beg3 = total3new
+                                total3new = 0
+                                alt3ff = 0
+                                alt3f = 0
+                                trimmed = True
+                            details1 = (total1, total4, total1new, total4new, ref1, ref4, alt1, alt4, ref1f, ref4f, alt1f, alt4f, na1, na4, lowq1, lowq4, beg1, beg4)
+                            details2 = (total2, total3, total2new, total3new, ref2, ref3, alt2, alt3, ref2f, ref3f, alt2f, alt3f, na2, na3, lowq2, lowq3, beg2, beg3)
 
                         chrom, pos = re.split(r'\#', key1)
                         # assign tiers
@@ -594,10 +621,15 @@ def read2mut(argv):
                             counter_tier41 += 1
                             tier_dict[key1]["tier 4.1"] += 1
 
-                        else:
+                        elif (contradictory):
                             tier = "4.2"
                             counter_tier42 += 1
                             tier_dict[key1]["tier 4.2"] += 1
+
+                        else:
+                            tier = "5"
+                            counter_tier5 += 1
+                            tier_dict[key1]["tier 5"] += 1
 
                         var_id = '-'.join([chrom, str(int(pos)+1), ref, alt])
                         sample_tag = key2[:-5]
@@ -702,8 +734,8 @@ def read2mut(argv):
     # sheet 2
     header_line2 = ('variant ID', 'cvrg', 'AC alt (all tiers)', 'AF  (all tiers)', 'cvrg (tiers 1.1-2.4)', 'AC alt (tiers 1.1-2.4)', 'AF (tiers 1.1-2.4)', 'AC alt (Du Novo)', 'AF (Du Novo)',
                     'tier 1.1', 'tier 1.2', 'tier 2.1', 'tier 2.2', 'tier 2.3', 'tier 2.4',
-                    'tier 3.1', 'tier 3.2', 'tier 4.1', 'tier 4.2', 'AF 1.1-1.2', 'AF 1.1-2.1', 'AF 1.1-2.2',
-                    'AF 1.1-2.3', 'AF 1.1-2.4', 'AF 1.1-3.1', 'AF 1.1-3.2', 'AF 1.1-4.1', 'AF 1.1-4.2')
+                    'tier 3.1', 'tier 3.2', 'tier 4.1', 'tier 4.2',  'tier 5', 'AF 1.1-1.2', 'AF 1.1-2.1', 'AF 1.1-2.2',
+                    'AF 1.1-2.3', 'AF 1.1-2.4', 'AF 1.1-3.1', 'AF 1.1-3.2', 'AF 1.1-4.1', 'AF 1.1-4.2', 'AF 1.1-5')
 
     ws2.write_row(0, 0, header_line2)
     row = 0
@@ -736,14 +768,14 @@ def read2mut(argv):
             ws2.write_row(row + 1, 0, lst)
             ws2.conditional_format('J{}:K{}'.format(row + 2, row + 2), {'type': 'formula', 'criteria': '=$J$1="tier 1.1"', 'format': format1, 'multi_range': 'J{}:K{} J1:K1'.format(row + 2, row + 2)})
             ws2.conditional_format('L{}:O{}'.format(row + 2, row + 2), {'type': 'formula', 'criteria': '=$L$1="tier 2.1"', 'format': format3, 'multi_range': 'L{}:O{} L1:O1'.format(row + 2, row + 2)})
-            ws2.conditional_format('P{}:S{}'.format(row + 2, row + 2), {'type': 'formula', 'criteria': '=$P$1="tier 3.1"', 'format': format2, 'multi_range': 'P{}:S{} P1:S1'.format(row + 2, row + 2)})
+            ws2.conditional_format('P{}:T{}'.format(row + 2, row + 2), {'type': 'formula', 'criteria': '=$P$1="tier 3.1"', 'format': format2, 'multi_range': 'P{}:T{} P1:T1'.format(row + 2, row + 2)})
             row += 1
 
     # sheet 3
     sheet3 = [("tier 1.1", counter_tier11), ("tier 1.2", counter_tier12), ("tier 2.1", counter_tier21),
               ("tier 2.2", counter_tier22), ("tier 2.3", counter_tier23), ("tier 2.4", counter_tier24),
               ("tier 3.1", counter_tier31), ("tier 3.2", counter_tier32),
-              ("tier 4.1", counter_tier41), ("tier 4.2", counter_tier42)]
+              ("tier 4.1", counter_tier41), ("tier 4.2", counter_tier42), ("tier 5", counter_tier5)]
 
     header = ("tier", "count")
     ws3.write_row(0, 0, header)
@@ -760,95 +792,100 @@ def read2mut(argv):
                                 'format': format3})
         ws3.conditional_format('A{}:B{}'.format(i + 2, i + 2),
                                {'type': 'formula',
-                                'criteria': '=OR($A${}="tier 3.1", $A${}="tier 3.2", $A${}="tier 4.1", $A${}="tier 4.2")'.format(i + 2, i + 2, i + 2, i + 2),
+                                'criteria': '=OR($A${}="tier 3.1", $A${}="tier 3.2", $A${}="tier 4.1", $A${}="tier 4.2", $A${}="tier 5")'.format(i + 2, i + 2, i + 2, i + 2, i + 2),
                                 'format': format2})
 
-    description_tiers = [("Tier 1.1", "both ab and ba SSCS present (>75% of the sites with alternative base) and minimal FS>=3 for both SSCS in at least one mate"), ("", ""), ("Tier 1.2", "both ab and ba SSCS present (>75% of the sites with alt. base) and mate pair validation (min. FS=1) and minimal FS>=3 for at least one of the SSCS"), ("Tier 2.1", "both ab and ba SSCS present (>75% of the sites with alt. base) and minimal FS>=3 for at least one of the SSCS in at least one mate"), ("Tier 2.2", "both ab and ba SSCS present (>75% of the sites with alt. base) and mate pair validation (min. FS=1)"), ("Tier 2.3", "both ab and ba SSCS present (>75% of the sites with alt. base) and minimal FS=1 for both SSCS in one mate and minimal FS>=3 for at least one of the SSCS in the other mate"), ("Tier 2.4", "both ab and ba SSCS present (>75% of the sites with alt. base) and minimal FS=1 for both SSCS in at least one mate"), ("Tier 3.1", "both ab and ba SSCS present (>50% of the sites with alt. base) and recurring mutation on this position"), ("Tier 3.2", "both ab and ba SSCS present (>50% of the sites with alt. base) and minimal FS>=1 for both SSCS in at least one mate"), ("Tier 4.1", "variants at the start or end of the DCS (median position of the variant within the PE-reads forming the DCS)"), ("Tier 4.2", "remaining variants")]
+    description_tiers = [("Tier 1.1", "both ab and ba SSCS present (>75% of the sites with alternative base) and minimal FS>=3 for both SSCS in at least one mate"), ("", ""), ("Tier 1.2", "both ab and ba SSCS present (>75% of the sites with alt. base) and mate pair validation (min. FS=1) and minimal FS>=3 for at least one of the SSCS"), ("Tier 2.1", "both ab and ba SSCS present (>75% of the sites with alt. base) and minimal FS>=3 for at least one of the SSCS in at least one mate"), ("Tier 2.2", "both ab and ba SSCS present (>75% of the sites with alt. base) and mate pair validation (min. FS=1)"), ("Tier 2.3", "both ab and ba SSCS present (>75% of the sites with alt. base) and minimal FS=1 for both SSCS in one mate and minimal FS>=3 for at least one of the SSCS in the other mate"), ("Tier 2.4", "both ab and ba SSCS present (>75% of the sites with alt. base) and minimal FS=1 for both SSCS in at least one mate"), ("Tier 3.1", "both ab and ba SSCS present (>50% of the sites with alt. base) and recurring mutation on this position"), ("Tier 3.2", "both ab and ba SSCS present (>50% of the sites with alt. base) and minimal FS>=1 for both SSCS in at least one mate"), ("Tier 4.1", "variants at the start or end of the reads"), ("Tier 4.2", "mates with contradictory information"), ("Tier 5", "remaining variants")]
     examples_tiers = [[("Chr5:5-20000-11068-C-G", "1.1", "AAAAAGATGCCGACTACCTT", "ab1.ba2", "254", "228", "287", "288", "289",
-                        "3", "6", "3", "6", "0", "0", "3", "6", "0", "0", "1", "1", "0", "0", "0", "0",
+                        "3", "6", "3", "6", "0", "0", "3", "6", "0", "0", "1", "1", "0", "0", "0", "0", "0", "0",
                         "4081", "4098", "5", "10", "", ""),
                        ("", "", "AAAAAGATGCCGACTACCTT", "ab2.ba1", None, None, None, None,
-                        "289", "0", "0", "0", "0", "0", "0", "3", "6", None, None, None, None,
-                        "0", "0", "0", "0", "4081", "4098", "5", "10", "", "")],
+                        "289", "0", "0", "0", "0", "0", "0", "0", "0", None, None, None, None,
+                        "0", "0", "0", "0", "0", "0", "4081", "4098", "5", "10", "", "")],
                       [("Chr5:5-20000-11068-C-G", "1.1", "AAAAATGCGTAGAAATATGC", "ab1.ba2", "254", "228", "287", "288", "289",
-                        "33", "43", "33", "43", "0", "0", "33", "43", "0", "0", "1", "1", "0", "0", "0",
+                        "33", "43", "33", "43", "0", "0", "33", "43", "0", "0", "1", "1", "0", "0", "0", "0", "0",
                         "0", "4081", "4098", "5", "10", "", ""),
                        ("", "", "AAAAATGCGTAGAAATATGC", "ab2.ba1", "268", "268", "270", "288", "289",
                         "11", "34", "10", "27", "0", "0", "10", "27", "0", "0", "1", "1", "0", "0", "1",
-                        "7", "4081", "4098", "5", "10", "", "")],
+                        "7", "0", "0", "4081", "4098", "5", "10", "", "")],
                       [("Chr5:5-20000-10776-G-T", "1.2", "CTATGACCCGTGAGCCCATG", "ab1.ba2", "132", "132", "287", "288", "290",
-                        "4", "1", "4", "1", "0", "0", "4", "1", "0", "0", "1", "1", "0", "0", "0", "0", "1",
-                        "6", "47170", "41149", "", ""),
+                        "4", "1", "4", "1", "0", "0", "4", "1", "0", "0", "1", "1", "0", "0", "0", "0",
+                        "0", "0", "1", "6", "47170", "41149", "", ""),
                        ("", "", "CTATGACCCGTGAGCCCATG", "ab2.ba1", "77", "132", "233", "200", "290",
-                        "4", "1", "4", "1", "0", "0", "4", "1", "0", "0", "1", "1", "0", "0", "0", "0", "1",
-                        "6", "47170", "41149", "", "")],
+                        "4", "1", "4", "1", "0", "0", "4", "1", "0", "0", "1", "1", "0", "0", "0", "0",
+                        "0", "0", "1", "6", "47170", "41149", "", "")],
                       [("Chr5:5-20000-11068-C-G", "2.1", "AAAAAAACATCATACACCCA", "ab1.ba2", "246", "244", "287", "288", "289",
-                        "2", "8", "2", "8", "0", "0", "2", "8", "0", "0", "1", "1", "0", "0", "0", "0",
+                        "2", "8", "2", "8", "0", "0", "2", "8", "0", "0", "1", "1", "0", "0", "0", "0", "0", "0",
                         "4081", "4098", "5", "10", "", ""),
                        ("", "", "AAAAAAACATCATACACCCA", "ab2.ba1", None, None, None, None,
-                        "289", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", None, None, "0", "0",
-                        "0", "0", "4081", "4098", "5", "10", "", "")],
+                        "289", "0", "0", "0", "0", "0", "0", "0", "0", None, None, None, None, "0", "0",
+                        "0", "0", "0", "0", "4081", "4098", "5", "10", "", "")],
                       [("Chr5:5-20000-11068-C-G", "2.2", "ATCAGCCATGGCTATTATTG", "ab1.ba2", "72", "72", "217", "288", "289",
-                        "1", "1", "1", "1", "0", "0", "1", "1", "0", "0", "1", "1", "0", "0", "0", "0",
+                        "1", "1", "1", "1", "0", "0", "1", "1", "0", "0", "1", "1", "0", "0", "0", "0", "0", "0",
                         "4081", "4098", "5", "10", "", ""),
                        ("", "", "ATCAGCCATGGCTATTATTG", "ab2.ba1", "153", "164", "217", "260", "289",
-                        "1", "1", "1", "1", "0", "0", "1", "1", "0", "0", "1", "1", "0", "0", "0", "0",
+                        "1", "1", "1", "1", "0", "0", "1", "1", "0", "0", "1", "1", "0", "0", "0", "0", "0", "0",
                         "4081", "4098", "5", "10", "", "")],
                       [("Chr5:5-20000-11068-C-G", "2.3", "ATCAATATGGCCTCGCCACG", "ab1.ba2", None, None, None, None,
                         "289", "0", "5", "0", "5", "0", "0", "0", "5", None, None, None, "1", "0",
-                        "0", "0", "0", "4081", "4098", "5", "10", "", ""),
+                        "0", "0", "0", "0", "0", "4081", "4098", "5", "10", "", ""),
                        ("", "", "ATCAATATGGCCTCGCCACG", "ab2.ba1", "202", "255", "277", "290", "289",
-                        "1", "3", "1", "3", "0", "0", "1", "3", "0", "0", "1", "1", "0", "0", "1", "7",
-                        "4081", "4098", "5", "10", "", "")],
+                        "1", "3", "1", "3", "0", "0", "1", "3", "0", "0", "1", "1", "0", "0", "0", "0",
+                        "0", "0", "4081", "4098", "5", "10", "", "")],
                       [("Chr5:5-20000-11068-C-G", "2.4", "ATCAGCCATGGCTATTTTTT", "ab1.ba2", "72", "72", "217", "288", "289",
-                        "1", "1", "1", "1", "0", "0", "1", "1", "0", "0", "1", "1", "0", "0", "0", "0", "4081",
+                        "1", "1", "1", "1", "0", "0", "1", "1", "0", "0", "1", "1", "0", "0", "0", "0", "0", "0", "4081",
                         "4098", "5", "10", "", ""),
                        ("", "", "ATCAGCCATGGCTATTTTTT", "ab2.ba1", "153", "164", "217", "260", "289",
-                        "1", "1", "0", "0", "0", "0", "1", "1", "0", "0", "0", "0", "0", "0", "0", "0", "4081",
+                        "1", "1", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "1", "1", "0", "0", "0", "0", "4081",
                         "4098", "5", "10", "", "")],
                       [("Chr5:5-20000-10776-G-T", "3.1", "ATGCCTACCTCATTTGTCGT", "ab1.ba2", "46", "15", "287", "288", "290",
                         "3", "3", "3", "2", "3", "1", "0", "1", "1", "0.5", "0", "0.5", "0", "0", "0", "1",
-                        "3", "3", "47170", "41149", "", ""),
+                        "0", "0", "3", "3", "47170", "41149", "", ""),
                        ("", "", "ATGCCTACCTCATTTGTCGT", "ab2.ba1", None, "274", None,
                         "288", "290", "0", "3", "0", "2", "0", "1", "0", "1", None, "0.5", None, "0.5",
-                        "0", "0", "0", "1", "3", "3", "47170", "41149", "", "")],
+                        "0", "0", "0", "1", "0", "0", "3", "3", "47170", "41149", "", "")],
                       [("Chr5:5-20000-11315-C-T", "3.2", "ACAACATCACGTATTCAGGT", "ab1.ba2", "197", "197", "240", "255", "271",
                         "2", "3", "2", "3", "0", "1", "2", "2", "0", "0.333333333333333", "1",
-                        "0.666666666666667", "0", "0", "0", "0", "1", "1", "6584", "6482", "", ""),
+                        "0.666666666666667", "0", "0", "0", "0", "0", "0", "1", "1", "6584", "6482", "", ""),
                        ("", "", "ACAACATCACGTATTCAGGT", "ab2.ba1", "35", "35", "240", "258", "271",
                         "2", "3", "2", "3", "0", "1", "2", "2", "0", "0.333333333333333", "1",
-                        "0.666666666666667", "0", "0", "0", "0", "1", "1", "6584", "6482", "", "")],
-                      [("Chr5:5-20000-13983-G-C", "4.1", "AAAAAAAGAATAACCCACAC", "ab1.ba2", "0", "0", "255", "276", "269",
-                        "5", "6", "5", "6", "0", "0", "5", "6", "0", "0", "1", "1", "0", "0", "0", "0", "1",
-                        "1", "5348", "5350", "", ""),
+                        "0.666666666666667", "0", "0", "0", "0", "0", "0", "1", "1", "6584", "6482", "", "")],
+                      [("Chr5:5-20000-13983-G-C", "4.1", "AAAAAAAGAATAACCCACAC", "ab1.ba2", "0", "100", "255", "276", "269",
+                        "5", "6", "0", "6", "0", "0", "5", "6", "0", "0", "0", "1", "0", "0", "0", "0", "5", "0", "1", "1", "5348", "5350", "", ""),
                        ("", "", "AAAAAAAGAATAACCCACAC", "ab2.ba1", None, None, None, None,
                         "269", "0", "0", "0", "0", "0", "0", "0", "0", None, None, None, None, "0",
-                        "0", "0", "0", "1", "1", "5348", "5350", "", "")],
-                      [("Chr5:5-20000-13983-G-C", "4.2", "ATGTTGTGAATAACCCACAC", "ab1.ba2", "209", "186", "255", "276", "269",
-                        "0", "6", "0", "6", "0", "0", "0", "6", "0", "0", "0", "1", "0", "0", "0", "0", "1",
-                        "1", "5348", "5350", "", ""),
+                        "0", "0", "0", "0", "0", "1", "1", "5348", "5350", "", "")],
+                       [("Chr5:5-20000-13963-TC", "4.2", "TTTTTAAGAATAACCCACAC", "ab1.ba2", "38", "38", "240", "283", "263",
+                        "110", "54", "110", "54", "0", "0", "110", "54", "0", "0", "1", "1", "0", "0", "0",
+                        "0", "0", "0", "1", "1", "5348", "5350", "", ""),
+                       ("", "", "TTTTTAAGAATAACCCACAC", "ab2.ba1", "100", "112", "140", "145", "263",
+                        "7", "12", "7", "12", "7", "12", "0", "0", "1", "1", "0",
+                        "0", "0", "0", "0", "0", "0", "0", "1", "1", "5348", "5350", "", "")],
+                      [("Chr5:5-20000-13983-G-C", "5", "ATGTTGTGAATAACCCACAC", "ab1.ba2", None, "186", None, "276", "269",
+                        "0", "6", "0", "6", "0", "0", "0", "6", "0", "0", "0", "1", "0", "0", "0", "0", "0",
+                        "0", "1", "1", "5348", "5350", "", ""),
                        ("", "", "ATGTTGTGAATAACCCACAC", "ab2.ba1", None, None, None, None,
                         "269", "0", "0", "0", "0", "0", "0", "0", "0", None, None, None, None, "0",
-                        "0", "0", "0", "1", "1", "5348", "5350", "", "")]]
+                        "0", "0", "0", "0", "0", "1", "1", "5348", "5350", "", "")]]
 
-    ws3.write(11, 0, "Description of tiers with examples")
-    ws3.write_row(12, 0, header_line)
+    ws3.write(13, 0, "Description of tiers with examples")
+    ws3.write_row(14, 0, header_line)
     row = 0
     for i in range(len(description_tiers)):
-        ws3.write_row(13 + row + i + 1, 0, description_tiers[i])
+        ws3.write_row(15 + row + i + 1, 0, description_tiers[i])
         ex = examples_tiers[i]
         for k in range(len(ex)):
-            ws3.write_row(13 + row + i + k + 2, 0, ex[k])
-        ws3.conditional_format('L{}:M{}'.format(13 + row + i + k + 2, 13 + row + i + k + 3), {'type': 'formula', 'criteria': '=OR($B${}="1.1", $B${}="1.2")'.format(13 + row + i + k + 2, 13 + row + i + k + 2), 'format': format1, 'multi_range': 'L{}:M{} T{}:U{} B{}'.format(13 + row + i + k + 2, 13 + row + i + k + 3, 13 + row + i + k + 2, 13 + row + i + k + 3, 13 + row + i + k + 2, 13 + row + i + k + 3)})
-        ws3.conditional_format('L{}:M{}'.format(13 + row + i + k + 2, 13 + row + i + k + 3),
-                               {'type': 'formula', 'criteria': '=OR($B${}="2.1",$B${}="2.2", $B${}="2.3", $B${}="2.4")'.format(13 + row + i + k + 2, 13 + row + i + k + 2, 13 + row + i + k + 2, 13 + row + i + k + 2),
+            ws3.write_row(15 + row + i + k + 2, 0, ex[k])
+        ws3.conditional_format('L{}:M{}'.format(15 + row + i + k + 2, 15 + row + i + k + 3), {'type': 'formula', 'criteria': '=OR($B${}="1.1", $B${}="1.2")'.format(15 + row + i + k + 2, 15 + row + i + k + 2), 'format': format1, 'multi_range': 'L{}:M{} T{}:U{} B{}'.format(15 + row + i + k + 2, 15 + row + i + k + 3, 15 + row + i + k + 2, 15 + row + i + k + 3, 15 + row + i + k + 2, 15 + row + i + k + 3)})
+        ws3.conditional_format('L{}:M{}'.format(15 + row + i + k + 2, 15 + row + i + k + 3),
+                               {'type': 'formula', 'criteria': '=OR($B${}="2.1",$B${}="2.2", $B${}="2.3", $B${}="2.4")'.format(15 + row + i + k + 2, 15 + row + i + k + 2, 15 + row + i + k + 2, 15 + row + i + k + 2),
                                 'format': format3,
-                                'multi_range': 'L{}:M{} T{}:U{} B{}'.format(13 + row + i + k + 2, 13 + row + i + k + 3, 13 + row + i + k + 2, 13 + row + i + k + 3, 13 + row + i + k + 2, 13 + row + i + k + 3)})
-        ws3.conditional_format('L{}:M{}'.format(13 + row + i + k + 2, 13 + row + i + k + 3),
+                                'multi_range': 'L{}:M{} T{}:U{} B{}'.format(15 + row + i + k + 2, 15 + row + i + k + 3, 15 + row + i + k + 2, 15 + row + i + k + 3, 15 + row + i + k + 2, 15 + row + i + k + 3)})
+        ws3.conditional_format('L{}:M{}'.format(15 + row + i + k + 2, 15 + row + i + k + 3),
                                {'type': 'formula',
-                                'criteria': '=$B${}>="3"'.format(13 + row + i + k + 2),
+                                'criteria': '=$B${}>="3"'.format(15 + row + i + k + 2),
                                 'format': format2,
-                                'multi_range': 'L{}:M{} T{}:U{} B{}'.format(13 + row + i + k + 2, 13 + row + i + k + 3, 13 + row + i + k + 2, 13 + row + i + k + 3, 13 + row + i + k + 2, 13 + row + i + k + 3)})
+                                'multi_range': 'L{}:M{} T{}:U{} B{}'.format(15 + row + i + k + 2, 15 + row + i + k + 3, 15 + row + i + k + 2, 15 + row + i + k + 3, 15 + row + i + k + 2, 15 + row + i + k + 3)})
         row += 3
     workbook.close()
 
