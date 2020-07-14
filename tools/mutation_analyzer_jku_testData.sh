@@ -13,7 +13,7 @@
 # The order of the statements is important.
 
 # change this path to the folder where your data is
-path="/run/user/1000/gvfs/smb-share:server=140.78.123.183,share=monika%20heinzl/Projects/0_Project_VariantAnalyzer/VariantAnalyzerMarch2020/tools/new_test_data_Feb2020"
+path="/home/admin-isse/Documents/VariantAnalyzerGalaxy/tools/test-data-new"
 # change this path so that it points to your reference fasta 
 ref="/run/user/1000/gvfs/smb-share:server=140.78.123.183,share=analysis%20uw%20monika/WashingtonData_November2019/CRISPR_DS/WashingtonAnalysis/references/hg38/hg38.fa"
 # make sure that it is indexed or perform:
@@ -47,23 +47,23 @@ sscs_counts_pickle=$path/"SSCS_counts_"$basename"_pysam_thresh100.pkl"
 outfile2=$path/"mutant_reads_summary_short_trim_"$basename"_March2020.xlsx"
 
 # if you did not download the .bai files:
-#samtools index $file2
-#samtools index $file2s
+samtools index $file2
+samtools index $file2s
 
 # 5. Creates fastq file of reads of tags with mutation.
-#python2.7 mut2read.py --mutFile $outfile1 --bamFile $file2 --familiesFile $file3 --outputFastq $outfile --outputJson $pickle_file
+python2.7 mut2read.py --mutFile $outfile1 --bamFile $file2 --familiesFile $file3 --outputFastq $outfile --outputJson $pickle_file
 
 # 6. Trim reads of fastq files.
 # I already changed this path for you
-#java -jar /home/admin-isse/Trimmomatic-0.39/trimmomatic-0.39.jar SE -threads 10 -trimlog $file.trim.log $outfile $file.trim.fastq LEADING:5 TRAILING:5 SLIDINGWINDOW:4:15 MINLEN:36
+java -jar /home/admin-isse/Trimmomatic-0.39/trimmomatic-0.39.jar SE -threads 10 -trimlog $file.trim.log $outfile $file.trim.fastq LEADING:5 TRAILING:5 SLIDINGWINDOW:4:15 MINLEN:36
 
 # 7. Align trimmed reads to reference.
-#/home/admin-isse/bwa-0.7.17/bwa mem -t 10 $ref $file.trim.fastq > $file.trim.sam
-#samtools sort $file.trim.sam > $file.trim.bam
-#samtools index $file.trim.bam
+/home/admin-isse/bwa-0.7.17/bwa mem -t 10 $ref $file.trim.fastq > $file.trim.sam
+samtools sort $file.trim.sam > $file.trim.bam
+samtools index $file.trim.bam
 
 # 8. Calculates statistics about number of ab/ba for mutation and wildtype for each mutation.
-#python2.7 mut2sscs.py --mutFile $outfile1 --bamFile $file2s --outputJson $sscs_counts_pickle
+python2.7 mut2sscs.py --mutFile $outfile1 --bamFile $file2s --outputJson $sscs_counts_pickle
 
 # 9. Looks for reads with mutation at known positions and calculates frequencies and stats.
 python2.7 read2mut.py --mutFile $outfile1 --bamFile $file.trim.bam --inputJson $pickle_file --sscsJson $sscs_counts_pickle --outputFile $outfile2 --thresh $thresh --phred $phred --trim 10
