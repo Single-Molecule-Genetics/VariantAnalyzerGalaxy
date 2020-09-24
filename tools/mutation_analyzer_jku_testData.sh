@@ -4,7 +4,7 @@
 # --> I already checked and inserted the right paths and names
 # 2. download the following files and name them accordong to this:
 # - choose a basename for all files e.g.: "ACH_old1_BAT_FS1_RL36"
-# - the file with the DCS Mutations should be called: "DCS_Mutations_ACH_old1_BAT_FS1_RL36.tabular"
+# - the file with the DCS Mutations should be called: "FreeBayes_ACH_old1_BAT_FS1_RL36.vcf"
 # - the BAM file of the DCS reads: "DCS_ACH_old1_BAT_FS1_RL36.bam"
 # - the BAM file of the SSCS reads: "SSCS_ACH_old1_BAT_FS1_RL36.bam"
 # - the file with the output of align families: "Aligned_Families_ACH_old1_BAT_FS1_RL36.tabular"

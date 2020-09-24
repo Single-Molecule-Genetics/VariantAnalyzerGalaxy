@@ -761,7 +761,7 @@ def read2mut(argv):
                 if len(used_tiers) > 1:
                     cum = safe_div(sum(used_tiers), cvrg)
                     cum_af.append(cum)
-            lst.extend([sum(used_tiers), safe_div(sum(used_tiers), cvrg), (cvrg - sum(used_tiers[-4:])), sum(used_tiers[0:6]), safe_div(sum(used_tiers[0:6]), (cvrg - sum(used_tiers[-4:]))), alt_count, safe_div(alt_count, cvrg)])
+            lst.extend([sum(used_tiers), safe_div(sum(used_tiers), cvrg), (cvrg - sum(used_tiers[-5:])), sum(used_tiers[0:6]), safe_div(sum(used_tiers[0:6]), (cvrg - sum(used_tiers[-5:]))), alt_count, safe_div(alt_count, cvrg)])
             lst.extend(used_tiers)
             lst.extend(cum_af)
             lst = tuple(lst)
