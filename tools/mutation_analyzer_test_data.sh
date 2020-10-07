@@ -13,7 +13,7 @@
 # The order of the statements is important.
 
 # change this path to the folder where your data is
-path="/home/admin-isse/Documents/VariantAnalyzerGalaxy/tools/test-data-new"
+path="/home/admin-isse/Documents/VariantAnalyzerGalaxy/tools/test-data"
 # change this path so that it points to your reference fasta 
 ref="/run/user/1000/gvfs/smb-share:server=140.78.123.183,share=analysis%20uw%20monika/WashingtonData_November2019/CRISPR_DS/WashingtonAnalysis/references/hg38/hg38.fa"
 # make sure that it is indexed or perform:
@@ -36,15 +36,15 @@ outfile1=$path/"FreeBayes_"$basename".vcf"
 file2=$path/"DCS_"$basename".bam"
 file3=$path/"Aligned_Families_"$basename".tabular"
 
-outfile=$path/"Interesting_Reads_"$basename"_pysam_thresh0.fastq"
-pickle_file=$path/"tag_count_dict_"$basename"_pysam_thresh0.pkl"
+outfile=$path/"Interesting_Reads_"$basename".fastq"
+pickle_file=$path/"tag_count_dict_"$basename".json"
 
-file=$path"/Interesting_Reads_"$basename"_pysam_thresh0"
+file=$path"/Interesting_Reads_"$basename""
 
 file2s=$path/"SSCS_"$basename".bam"
-sscs_counts_pickle=$path/"SSCS_counts_"$basename"_pysam_thresh100.pkl"
+sscs_counts_pickle=$path/"SSCS_counts_"$basename".json"
 
-outfile2=$path/"mutant_reads_summary_short_trim_"$basename"_March2020.xlsx"
+outfile2=$path/"Variant_Analyzer_"$basename".xlsx"
 
 # if you did not download the .bai files:
 samtools index $file2
@@ -66,5 +66,5 @@ samtools index $file.trim.bam
 python2.7 mut2sscs.py --mutFile $outfile1 --bamFile $file2s --outputJson $sscs_counts_pickle
 
 # 9. Looks for reads with mutation at known positions and calculates frequencies and stats.
-python2.7 read2mut.py --mutFile $outfile1 --bamFile $file.trim.bam --inputJson $pickle_file --sscsJson $sscs_counts_pickle --outputFile $outfile2 --thresh $thresh --phred $phred --trim 10
+python2.7 read2mut.py --mutFile $outfile1 --bamFile $file.trim.bam --inputJson $pickle_file --sscsJson $sscs_counts_pickle --outputFile $outfile2 --thresh $thresh --phred $phred --trim 10 --chimera_correction
 

@@ -14,8 +14,7 @@ Version  Date        Author             Description
 0.2.1    2019-10-27  Gundula Povysil    -
 =======  ==========  =================  ================================
 
-USAGE: python mut2read.py DCS_Mutations.tabular DCS.bam Aligned_Families.tabular Interesting_Reads.fastq
-                          tag_count_dict.json
+USAGE: python mut2read.py DCS_Mutations.tabular DCS.bam Aligned_Families.tabular Interesting_Reads.fastq tag_count_dict.json
 """
 
 import argparse
@@ -26,6 +25,7 @@ import sys
 import numpy as np
 import pysam
 from cyvcf2 import VCF
+
 
 def make_argparser():
     parser = argparse.ArgumentParser(description='Takes a vcf file with mutations and a BAM file as input and prints all tags of reads that carry the mutation to a user specified output file and creates a fastq file of reads of tags with mutation.')
@@ -149,3 +149,4 @@ def mut2read(argv):
 
 if __name__ == '__main__':
     sys.exit(mut2read(sys.argv))
+

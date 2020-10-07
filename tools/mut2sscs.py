@@ -125,7 +125,7 @@ def mut2sscs(argv):
                 ref_pos_dict[chrom_stop_pos]["ab"] = 0
                 ref_pos_dict[chrom_stop_pos]["ba"] = 0
         else:
-            print("indels are currently not evaluated")        
+            print("indels are currently not evaluated")
     bam.close()
 
     # save counts
@@ -135,3 +135,4 @@ def mut2sscs(argv):
 
 if __name__ == '__main__':
     sys.exit(mut2sscs(sys.argv))
+
