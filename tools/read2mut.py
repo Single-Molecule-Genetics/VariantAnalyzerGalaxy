@@ -761,10 +761,10 @@ def read2mut(argv):
                 chimera_dict[key1] = (chimeric_dcs, chimeric_dcs_high_tiers)
     # sheet 2
     if chimera_correction:
-        header_line2 = ('variant ID', 'cvrg', 'AC alt (all tiers)', 'AF (all tiers)', 'chimeras in AC alt (all tiers)', 'chimera-corrected AF (all tiers)', 'cvrg (tiers 1.1-2.4)', 'AC alt (tiers 1.1-2.4)', 'AF (tiers 1.1-2.4)', 'chimeras in AC alt (tiers 1.1-2.4)', 'chimera-corrected AF (tiers 1.1-2.4)', 'AC alt (orginal DCS)', 'AF (original DCS)',
-                        'tier 1.1', 'tier 1.2', 'tier 2.1', 'tier 2.2', 'tier 2.3', 'tier 2.4',
-                        'tier 3.1', 'tier 3.2', 'tier 4.1', 'tier 4.2', 'tier 5', 'AF 1.1-1.2', 'AF 1.1-2.1', 'AF 1.1-2.2',
-                        'AF 1.1-2.3', 'AF 1.1-2.4', 'AF 1.1-3.1', 'AF 1.1-3.2', 'AF 1.1-4.1', 'AF 1.1-4.2', 'AF 1.1-5')
+        header_line2 = ('variant ID', 'cvrg', 'AC alt (all tiers)', 'AF (all tiers)', 'chimeras in AC alt (all tiers)', 'chimera-corrected cvrg', 'chimera-corrected AF (all tiers)', 'cvrg (tiers 1.1-2.4)', 'AC alt (tiers 1.1-2.4)', 'AF (tiers 1.1-2.4)', 'chimeras in AC alt (tiers 1.1-2.4)', 'chimera-corrected cvrg (tiers 1.1-2.4)', 'chimera-corrected AF (tiers 1.1-2.4)', 'AC alt (orginal DCS)', 'AF (original DCS)',
+                    'tier 1.1', 'tier 1.2', 'tier 2.1', 'tier 2.2', 'tier 2.3', 'tier 2.4',
+                    'tier 3.1', 'tier 3.2', 'tier 4.1', 'tier 4.2', 'tier 5', 'AF 1.1-1.2', 'AF 1.1-2.1', 'AF 1.1-2.2',
+                    'AF 1.1-2.3', 'AF 1.1-2.4', 'AF 1.1-3.1', 'AF 1.1-3.2', 'AF 1.1-4.1', 'AF 1.1-4.2', 'AF 1.1-5')
     else:
         header_line2 = ('variant ID', 'cvrg', 'AC alt (all tiers)', 'AF (all tiers)', 'cvrg (tiers 1.1-2.4)', 'AC alt (tiers 1.1-2.4)', 'AF (tiers 1.1-2.4)', 'AC alt (orginal DCS)', 'AF (original DCS)',
                         'tier 1.1', 'tier 1.2', 'tier 2.1', 'tier 2.2', 'tier 2.3', 'tier 2.4',
@@ -803,7 +803,7 @@ def read2mut(argv):
                 if fraction_chimeras is None:
                     fraction_chimeras = 0.
                 new_cvrg = cvrg * (1. - fraction_chimeras)
-                lst.extend([chimeras_all, safe_div(new_alt, new_cvrg)])
+                lst.extend([chimeras_all, new_cvrg, safe_div(new_alt, new_cvrg)])
             lst.extend([(cvrg - sum(used_tiers[-5:])), sum(used_tiers[0:6]), safe_div(sum(used_tiers[0:6]), (cvrg - sum(used_tiers[-5:])))])
             if chimera_correction:
                 chimeras_all = chimera_dict[key1][1]
@@ -812,16 +812,16 @@ def read2mut(argv):
                 if fraction_chimeras is None:
                     fraction_chimeras = 0.
                 new_cvrg = (cvrg - sum(used_tiers[-5:])) * (1. - fraction_chimeras)
-                lst.extend([chimeras_all, safe_div(new_alt, new_cvrg)])
+                lst.extend([chimeras_all, new_cvrg, safe_div(new_alt, new_cvrg)])
             lst.extend([alt_count, safe_div(alt_count, cvrg)])
             lst.extend(used_tiers)
             lst.extend(cum_af)
             lst = tuple(lst)
             ws2.write_row(row + 1, 0, lst)
             if chimera_correction:
-                ws2.conditional_format('N{}:O{}'.format(row + 2, row + 2), {'type': 'formula', 'criteria': '=$N$1="tier 1.1"', 'format': format1, 'multi_range': 'N{}:O{} N1:O1'.format(row + 2, row + 2)})
-                ws2.conditional_format('P{}:S{}'.format(row + 2, row + 2), {'type': 'formula', 'criteria': '=$P$1="tier 2.1"', 'format': format3, 'multi_range': 'P{}:S{} P1:S1'.format(row + 2, row + 2)})
-                ws2.conditional_format('T{}:X{}'.format(row + 2, row + 2), {'type': 'formula', 'criteria': '=$T$1="tier 3.1"', 'format': format2, 'multi_range': 'T{}:X{} T1:X1'.format(row + 2, row + 2)})
+                ws2.conditional_format('P{}:Q{}'.format(row + 2, row + 2), {'type': 'formula', 'criteria': '=$P$1="tier 1.1"', 'format': format1, 'multi_range': 'P{}:Q{} P1:Q1'.format(row + 2, row + 2)})
+                ws2.conditional_format('R{}:U{}'.format(row + 2, row + 2), {'type': 'formula', 'criteria': '=$R$1="tier 2.1"', 'format': format3, 'multi_range': 'R{}:U{} R1:U1'.format(row + 2, row + 2)})
+                ws2.conditional_format('V{}:Z{}'.format(row + 2, row + 2), {'type': 'formula', 'criteria': '=$V$1="tier 3.1"', 'format': format2, 'multi_range': 'V{}:Z{} V1:Z1'.format(row + 2, row + 2)})
             else:
                 ws2.conditional_format('J{}:K{}'.format(row + 2, row + 2), {'type': 'formula', 'criteria': '=$J$1="tier 1.1"', 'format': format1, 'multi_range': 'J{}:K{} J1:K1'.format(row + 2, row + 2)})
                 ws2.conditional_format('L{}:O{}'.format(row + 2, row + 2), {'type': 'formula', 'criteria': '=$L$1="tier 2.1"', 'format': format3, 'multi_range': 'L{}:O{} L1:O1'.format(row + 2, row + 2)})
