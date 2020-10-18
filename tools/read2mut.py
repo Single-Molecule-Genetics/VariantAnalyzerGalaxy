@@ -37,7 +37,7 @@ from cyvcf2 import VCF
 
 
 def make_argparser():
-    parser = argparse.ArgumentParser(description='Takes a vcf file with mutations, a BAM file and JSON files as input and prints stats about variants to a user specified output file.')
+    parser = argparse.ArgumentParser(description='Takes a VCF file with mutations, a BAM file and JSON files as input and prints stats about variants to a user specified output file.')
     parser.add_argument('--mutFile',
                         help='VCF file with DCS mutations.')
     parser.add_argument('--bamFile',
@@ -197,7 +197,7 @@ def read2mut(argv):
                     mut_dict[key][read.query_name][nuc] = 1
     bam.close()
 
-    # 5. create pure_tags_dict
+    # create pure_tags_dict
     pure_tags_dict = {}
     for key1, value1 in sorted(mut_dict.items()):
         i = np.where(np.array(['#'.join(str(i) for i in z)
@@ -214,7 +214,7 @@ def read2mut(argv):
                     else:
                         pure_tags_dict[key1][pure_tag] = 1
 
-    # 6. create pure_tags_dict_short with thresh
+    # create pure_tags_dict_short with thresh
     if thresh > 0:
         pure_tags_dict_short = {}
         for key, value in sorted(pure_tags_dict.items()):
@@ -233,7 +233,7 @@ def read2mut(argv):
     #        else:
     #            whole_array.append(keys[0])
 
-    # 7. output summary with threshold
+    # output summary with threshold
     workbook = xlsxwriter.Workbook(outfile)
     ws1 = workbook.add_worksheet("Results")
     ws2 = workbook.add_worksheet("Allele frequencies")
