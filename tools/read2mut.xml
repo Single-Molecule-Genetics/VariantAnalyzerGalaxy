@@ -55,7 +55,7 @@
     <help> <![CDATA[
 **What it does**
 
-Takes a tabular file with mutations, a BAM file of aligned raw reads, and JSON files 
+Takes a VCF file with mutations, a BAM file of aligned raw reads, and JSON files 
 created by the tools **DCS mutations to tags/reads** and **DCS mutations to SSCS stats** 
 as input and calculates frequencies and stats for DCS mutations based on information 
 from the raw reads.
