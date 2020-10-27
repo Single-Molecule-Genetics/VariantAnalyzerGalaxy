@@ -49,7 +49,7 @@
             <param name="phred" value="20"/>
             <param name="trim" value="10"/>
             <param name="chimera_correction"/>
-            <output name="output_xlsx" file="Variant_Analyzer_test.xlsx" decompress="true" lines_diff="10"/>
+            <output name="output_xlsx" file="Variant_Analyzer_test.xlsx" decompress="true"/>
         </test>
     </tests>
     <help> <![CDATA[

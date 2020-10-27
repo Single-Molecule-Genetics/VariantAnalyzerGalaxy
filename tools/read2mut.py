@@ -766,9 +766,9 @@ def read2mut(argv):
     # sheet 2
     if chimera_correction:
         header_line2 = ('variant ID', 'cvrg', 'AC alt (all tiers)', 'AF (all tiers)', 'chimeras in AC alt (all tiers)', 'chimera-corrected cvrg', 'chimera-corrected AF (all tiers)', 'cvrg (tiers 1.1-2.4)', 'AC alt (tiers 1.1-2.4)', 'AF (tiers 1.1-2.4)', 'chimeras in AC alt (tiers 1.1-2.4)', 'chimera-corrected cvrg (tiers 1.1-2.4)', 'chimera-corrected AF (tiers 1.1-2.4)', 'AC alt (orginal DCS)', 'AF (original DCS)',
-                    'tier 1.1', 'tier 1.2', 'tier 2.1', 'tier 2.2', 'tier 2.3', 'tier 2.4',
-                    'tier 3.1', 'tier 3.2', 'tier 4.1', 'tier 4.2', 'tier 5', 'AF 1.1-1.2', 'AF 1.1-2.1', 'AF 1.1-2.2',
-                    'AF 1.1-2.3', 'AF 1.1-2.4', 'AF 1.1-3.1', 'AF 1.1-3.2', 'AF 1.1-4.1', 'AF 1.1-4.2', 'AF 1.1-5')
+                        'tier 1.1', 'tier 1.2', 'tier 2.1', 'tier 2.2', 'tier 2.3', 'tier 2.4',
+                        'tier 3.1', 'tier 3.2', 'tier 4.1', 'tier 4.2', 'tier 5', 'AF 1.1-1.2', 'AF 1.1-2.1', 'AF 1.1-2.2',
+                        'AF 1.1-2.3', 'AF 1.1-2.4', 'AF 1.1-3.1', 'AF 1.1-3.2', 'AF 1.1-4.1', 'AF 1.1-4.2', 'AF 1.1-5')
     else:
         header_line2 = ('variant ID', 'cvrg', 'AC alt (all tiers)', 'AF (all tiers)', 'cvrg (tiers 1.1-2.4)', 'AC alt (tiers 1.1-2.4)', 'AF (tiers 1.1-2.4)', 'AC alt (orginal DCS)', 'AF (original DCS)',
                         'tier 1.1', 'tier 1.2', 'tier 2.1', 'tier 2.2', 'tier 2.3', 'tier 2.4',
@@ -954,4 +954,3 @@ def read2mut(argv):
 
 if __name__ == '__main__':
     sys.exit(read2mut(sys.argv))
-
