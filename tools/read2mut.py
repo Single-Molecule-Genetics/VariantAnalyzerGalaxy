@@ -164,9 +164,9 @@ def read2mut(argv):
                                 count_alt += 1
                                 if tag not in mut_read_dict:
                                     mut_read_dict[tag] = {}
-                                    mut_read_dict[tag][chrom_stop_pos] = alt
+                                    mut_read_dict[tag][chrom_stop_pos] = (alt, ref)
                                 else:
-                                    mut_read_dict[tag][chrom_stop_pos] = alt
+                                    mut_read_dict[tag][chrom_stop_pos] = (alt, ref)
                             elif nuc == ref:
                                 count_ref += 1
                             elif nuc == "N":
@@ -249,7 +249,7 @@ def read2mut(argv):
                    'rel. ref.ab', 'rel. ref.ba', 'rel. alt.ab', 'rel. alt.ba',
                    'na.ab', 'na.ba', 'lowq.ab', 'lowq.ba', 'trim.ab', 'trim.ba',
                    'SSCS alt.ab', 'SSCS alt.ba', 'SSCS ref.ab', 'SSCS ref.ba',
-                   'other mut', 'chimeric tag')
+                   'in phase', 'chimeric tag')
     ws1.write_row(0, 0, header_line)
 
     counter_tier11 = 0
@@ -338,10 +338,11 @@ def read2mut(argv):
                             if add_mut1 > 1:
                                 for k, v in mut_read_dict[(key2[:-5] + '.ab.1')].items():
                                     if k != key1:
+                                        new_mut = str(k).split("#")[0] + "-" + str(int(str(k).split("#")[1]) + 1) + "-" + v[1] + "-" + v[0]
                                         if len(add_mut14) == 0:
-                                            add_mut14 = str(k) + "_" + v
+                                            add_mut14 = new_mut
                                         else:
-                                            add_mut14 = add_mut14 + ", " + str(k) + "_" + v
+                                            add_mut14 = add_mut14 + ", " + new_mut
                         else:
                             k1 = []
                     else:
@@ -380,10 +381,11 @@ def read2mut(argv):
                             if add_mut2 > 1:
                                 for k, v in mut_read_dict[(key2[:-5] + '.ab.2')].items():
                                     if k != key1:
+                                        new_mut = str(k).split("#")[0] + "-" + str(int(str(k).split("#")[1]) + 1) + "-" + v[1] + "-" + v[0]
                                         if len(add_mut23) == 0:
-                                            add_mut23 = str(k) + "_" + v
+                                            add_mut23 = new_mut
                                         else:
-                                            add_mut23 = add_mut23 + ", " + str(k) + "_" + v
+                                            add_mut23 = add_mut23 + ", " + new_mut
                         else:
                             k2 = []
                     else:
@@ -421,10 +423,11 @@ def read2mut(argv):
                             if add_mut3 > 1:
                                 for k, v in mut_read_dict[(key2[:-5] + '.ba.1')].items():
                                     if k != key1 and k not in k2:
+                                        new_mut = str(k).split("#")[0] + "-" + str(int(str(k).split("#")[1]) + 1) + "-" + v[1] + "-" + v[0]
                                         if len(add_mut23) == 0:
-                                            add_mut23 = str(k) + "_" + v
+                                            add_mut23 = new_mut
                                         else:
-                                            add_mut23 = add_mut23 + ", " + str(k) + "_" + v
+                                            add_mut23 = add_mut23 + ", " + new_mut
                     else:
                         total3 = total3new = na3 = lowq3 = 0
                         ref3 = alt3 = ref3f = alt3f = 0
@@ -459,10 +462,11 @@ def read2mut(argv):
                             if add_mut4 > 1:
                                 for k, v in mut_read_dict[(key2[:-5] + '.ba.2')].items():
                                     if k != key1 and k not in k1:
+                                        new_mut = str(k).split("#")[0] + "-" + str(int(str(k).split("#")[1]) + 1) + "-" + v[1] + "-" + v[0]
                                         if len(add_mut14) == 0:
-                                            add_mut14 = str(k) + "_" + v
+                                            add_mut14 = new_mut
                                         else:
-                                            add_mut14 = add_mut14 + ", " + str(k) + "_" + v
+                                            add_mut14 = add_mut14 + ", " + new_mut
                     else:
                         total4 = total4new = na4 = lowq4 = 0
                         ref4 = alt4 = ref4f = alt4f = 0
