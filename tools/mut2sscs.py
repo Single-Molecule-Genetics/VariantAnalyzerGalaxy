@@ -11,7 +11,7 @@ Calculates statistics about number of ab/ba/duplex per mutation.
 
 =======  ==========  =================  ================================
 Version  Date        Author             Description
-2.0.0    2020-10-30  Gundula Povysil    -
+0.2.1    2019-10-27  Gundula Povysil    -
 =======  ==========  =================  ================================
 
 USAGE: python mut2sscs.py DCS_Mutations.tabular SSCS.bam SSCS_counts.json
@@ -25,6 +25,7 @@ import json
 import os
 import sys
 
+import numpy as np
 import pysam
 from cyvcf2 import VCF
 
@@ -55,6 +56,7 @@ def mut2sscs(argv):
         sys.exit("Error: Could not find '{}'".format(file2))
 
     # read SSCS bam file
+#    pysam.index(file2)
     bam = pysam.AlignmentFile(file2, "rb")
 
     # get tags
@@ -64,11 +66,16 @@ def mut2sscs(argv):
     for variant in VCF(file1):
         chrom = variant.CHROM
         stop_pos = variant.start
-        chrom_stop_pos = str(chrom) + "#" + str(stop_pos)
+        #chrom_stop_pos = str(chrom) + "#" + str(stop_pos)
         ref = variant.REF
-        alt = variant.ALT[0]
+        if len(variant.ALT) == 0:
+            continue
+        else:
+            alt = variant.ALT[0]
+        chrom_stop_pos = str(chrom) + "#" + str(stop_pos) + "#" + ref + "#" + alt
 
         if len(ref) == len(alt):
+
             for pileupcolumn in bam.pileup(chrom, stop_pos - 1, stop_pos + 1, max_depth=1000000000):
                 if pileupcolumn.reference_pos == stop_pos:
                     count_alt = 0
@@ -130,3 +137,4 @@ def mut2sscs(argv):
 
 if __name__ == '__main__':
     sys.exit(mut2sscs(sys.argv))
+

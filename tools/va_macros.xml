@@ -2,20 +2,29 @@
     <xml name="citation">
         <citations>
             <citation type="bibtex">
-                @misc{duplex,
-                author = {Povysil, Gundula and Heinzl, Monika and Salazar, Renato and Stoler, Nicholas and Nekrutenko, Anton and Tiemann-Boege, Irene},
-                year = {2020},
-                title = {{Increased yields of duplex sequencing data by a series of quality control tools (manuscript)}}
-             }
+                @article{10.1093/nargab/lqab002,
+                    author = {Povysil, Gundula and Heinzl, Monika and Salazar, Renato and Stoler, Nicholas and Nekrutenko, Anton and Tiemann-Boege, Irene},
+                    title = "{Increased yields of duplex sequencing data by a series of quality control tools}",
+                    journal = {NAR Genomics and Bioinformatics},
+                    volume = {3},
+                    number = {1},
+                    year = {2021},
+                    month = {02},
+                    issn = {2631-9268},
+                    doi = {10.1093/nargab/lqab002},
+                    url = {https://doi.org/10.1093/nargab/lqab002},
+                    eprint = {https://academic.oup.com/nargab/article-pdf/3/1/lqab002/36429662/lqab002.pdf},
+                }
+                
             </citation>
         </citations>
     </xml>
     <xml name="requirements">
-        <requirements>
+         <requirements>
              <requirement type="package" version="3.1.2">matplotlib</requirement>
              <requirement type="package" version="0.15">pysam</requirement>
              <requirement type="package" version="0.11.6">cyvcf2</requirement>
              <yield/>
-        </requirements>
+         </requirements>
     </xml>
 </macros>

@@ -1,0 +1,7 @@
+variant ID,tier,tag,mate,read pos.ab,read pos.ba,read median length.ab,read median length.ba,DCS median length,FS.ab,FS.ba,FSqc.ab,FSqc.ba,ref.ab,ref.ba,alt.ab,alt.ba,rel. ref.ab,rel. ref.ba,rel. alt.ab,rel. alt.ba,na.ab,na.ba,lowq.ab,lowq.ba,trim.ab,trim.ba,SSCS alt.ab,SSCS alt.ba,SSCS ref.ab,SSCS ref.ba,in phase,chimeric tag
+ACH_TDII_5regions-505-C-A,2.1,GATAACCTTGCTTCGTGATTAATC,ab1.ba2,132.0,131.0,264.0,263.0,173.0,1,3,1,3,0,0,1,3,0,0,1.0,1.0,0,0,0,0,0,0,2,1,1,1,,
+,,GATAACCTTGCTTCGTGATTAATC,ab2.ba1,,,,,173.0,0,0,0,0,0,0,0,0,,,,,0,0,0,0,0,0,2,1,1,1,,
+ACH_TDII_5regions-571-C-T,1.1,GATTGGATAACGTTGTGGCAATTG,ab1.ba2,129.0,218.0,195.0,284.0,143.0,4,5,4,5,0,0,4,5,0,0,1.0,1.0,0,0,0,0,0,0,1,1,2,1,,
+,,GATTGGATAACGTTGTGGCAATTG,ab2.ba1,264.0,264.0,278.5,283.5,143.0,2,2,2,2,0,0,2,2,0,0,1.0,1.0,0,0,0,0,0,0,1,1,2,1,,
+ACH_TDII_5regions-958-T-C,2.4,CCTCCCGGCAGTGCGAAAATGTCA,ab1.ba2,,,,,195.0,0,0,0,0,0,0,0,0,,,,,0,0,0,0,0,0,1,1,1,0,,
+,,CCTCCCGGCAGTGCGAAAATGTCA,ab2.ba1,97.0,91.0,283.0,277.0,195.0,1,1,1,1,0,0,1,1,0,0,1.0,1.0,0,0,0,0,0,0,1,1,1,0,,

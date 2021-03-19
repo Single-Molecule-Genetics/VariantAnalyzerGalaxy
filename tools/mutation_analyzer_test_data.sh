@@ -15,7 +15,7 @@
 # change this path to the folder where your data is
 path="/home/admin-isse/Documents/VariantAnalyzerGalaxy/tools/test-data"
 # change this path so that it points to your reference fasta 
-ref="/run/user/1000/gvfs/smb-share:server=140.78.123.183,share=analysis%20uw%20monika/WashingtonData_November2019/CRISPR_DS/WashingtonAnalysis/references/hg38/hg38.fa"
+ref="reference.fasta"
 # make sure that it is indexed or perform:
 # bwa index $ref
 
@@ -44,7 +44,10 @@ file=$path"/Interesting_Reads_"$basename""
 file2s=$path/"SSCS_"$basename".bam"
 sscs_counts_pickle=$path/"SSCS_counts_"$basename".json"
 
-outfile2=$path/"Variant_Analyzer_"$basename".xlsx"
+outfile2=$path/"Variant_Analyzer_summary_"$basename".xlsx"
+outfile3=$path/"Variant_Analyzer_summary_"$basename".csv"
+outfile4=$path/"Variant_Analyzer_allele_frequencies_"$basename".xlsx"
+outfile5=$path/"Variant_Analyzer_tiers_"$basename".xlsx"
 
 # if you did not download the .bai files:
 samtools index $file2
@@ -66,5 +69,5 @@ samtools index $file.trim.bam
 python2.7 mut2sscs.py --mutFile $outfile1 --bamFile $file2s --outputJson $sscs_counts_pickle
 
 # 9. Looks for reads with mutation at known positions and calculates frequencies and stats.
-python2.7 read2mut.py --mutFile $outfile1 --bamFile $file.trim.bam --inputJson $pickle_file --sscsJson $sscs_counts_pickle --outputFile $outfile2 --thresh $thresh --phred $phred --trim 10 --chimera_correction
+python2.7 read2mut.py --mutFile $outfile1 --bamFile $file.trim.bam --inputJson $pickle_file --sscsJson $sscs_counts_pickle --outputFile $outfile2 --outputFile_csv $outfile3 --outputFile2 $outfile4 --outputFile3 $outfile5 --thresh $thresh --phred $phred --trim 10 --chimera_correction --softclipping_dist 15 --reads_threshold 1.0
 
