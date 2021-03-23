@@ -131,11 +131,8 @@ def read2mut(argv):
     mut_array = []
 
     for count, variant in enumerate(VCF(file1)):
-    	#if count == 2000:
-        #    break
         chrom = variant.CHROM
         stop_pos = variant.start
-        #chrom_stop_pos = str(chrom) + "#" + str(stop_pos)
         ref = variant.REF
         if len(variant.ALT) == 0:
             continue
@@ -161,17 +158,14 @@ def read2mut(argv):
                     count_other = 0
                     count_lowq = 0
                     n = 0
-                    #print("unfiltered reads=", pileupcolumn.n, "filtered reads=", len(pileupcolumn.pileups),
-                    #      "difference= ", len(pileupcolumn.pileups) - pileupcolumn.n)
                     for pileupread in pileupcolumn.pileups:
                         n += 1
                         if not pileupread.is_del and not pileupread.is_refskip:
                             tag = pileupread.alignment.query_name
                             nuc = pileupread.alignment.query_sequence[pileupread.query_position]
                             phred = ord(pileupread.alignment.qual[pileupread.query_position]) - 33
-
                             # if read is softclipped, store real position in reference
-                            if "S" in pileupread.alignment.cigarstring: 
+                            if "S" in pileupread.alignment.cigarstring:
                                 # spftclipped at start
                                 if re.search(r"^[0-9]+S", pileupread.alignment.cigarstring):
                                     start = pileupread.alignment.reference_start - int(pileupread.alignment.cigarstring.split("S")[0])
@@ -198,9 +192,9 @@ def read2mut(argv):
                                 mut_read_cigar_dict[chrom_stop_pos][tag] = [pileupread.alignment.cigarstring]
                                 real_start_end[chrom_stop_pos][tag] = [(start, end)]
                             else:
-                            	mut_read_pos_dict[chrom_stop_pos][tag].append(pileupread.query_position + 1)
-                            	reads_dict[chrom_stop_pos][tag].append(len(pileupread.alignment.query_sequence))
-                            	mut_read_cigar_dict[chrom_stop_pos][tag].append(pileupread.alignment.cigarstring)
+                                mut_read_pos_dict[chrom_stop_pos][tag].append(pileupread.query_position + 1)
+                                reads_dict[chrom_stop_pos][tag].append(len(pileupread.alignment.query_sequence))
+                                mut_read_cigar_dict[chrom_stop_pos][tag].append(pileupread.alignment.cigarstring)
                                 real_start_end[chrom_stop_pos][tag].append((start, end))
                             if nuc == alt:
                                 count_alt += 1
@@ -220,9 +214,6 @@ def read2mut(argv):
                         else:
                             count_indel += 1
 
-                    #print("coverage at pos %s = %s, ref = %s, alt = %s, other bases = %s, N = %s, indel = %s, low quality = %s\n" % (pileupcolumn.pos, count_ref + count_alt, count_ref, count_alt, count_other, count_n, count_indel, count_lowq))
-        #else:
-        #    print("indels are currently not evaluated")
     mut_array = np.array(mut_array)
     for read in bam.fetch(until_eof=True):
         if read.is_unmapped:
@@ -242,10 +233,6 @@ def read2mut(argv):
     # create pure_tags_dict
     pure_tags_dict = {}
     for key1, value1 in sorted(mut_dict.items()):
-    	#if len(np.where(np.array(['#'.join(str(i) for i in z)
-        #                       for z in zip(mut_array[:, 0], mut_array[:, 1])]) == key1)[0]) == 0:
-    #		continue
-
         i = np.where(np.array(['#'.join(str(i) for i in z)
                                for z in zip(mut_array[:, 0], mut_array[:, 1], mut_array[:, 2], mut_array[:, 3])]) == key1)[0][0]
         ref = mut_array[i, 2]
@@ -336,7 +323,7 @@ def read2mut(argv):
             whole_array = pure_tags_dict_short[key1].keys()
 
             tier_dict[key1] = {}
-            values_tier_dict = [("tier 1.1", 0), ("tier 1.2", 0), ("tier 2.1", 0), ("tier 2.2", 0), ("tier 2.3", 0), ("tier 2.4", 0),("tier 2.5", 0),
+            values_tier_dict = [("tier 1.1", 0), ("tier 1.2", 0), ("tier 2.1", 0), ("tier 2.2", 0), ("tier 2.3", 0), ("tier 2.4", 0), ("tier 2.5", 0),
                                 ("tier 3.1", 0), ("tier 3.2", 0), ("tier 4", 0), ("tier 5.1", 0), ("tier 5.2", 0), ("tier 5.3", 0), ("tier 5.4", 0), ("tier 5.5", 0),
                                 ("tier 6", 0), ("tier 7", 0)]
             for k, v in values_tier_dict:
@@ -619,41 +606,41 @@ def read2mut(argv):
                         softclipped_idx1 = [True if re.search(r"^[0-9]+S", string) or re.search(r"S$", string) else False for string in cigars_dcs1]
                         ratio1 = safe_div(sum(softclipped_idx1), float(len(softclipped_idx1))) >= threshold_reads
                         if any(ij is True for ij in softclipped_idx1):
-                        	softclipped_both_ends_idx1 = [True if (re.search(r"^[0-9]+S", string) and re.search(r"S$", string)) else False for string in cigars_dcs1]
-                        	softclipped_start1 = [int(string.split("S")[0]) if re.search(r"^[0-9]+S", string) else -1 for string in cigars_dcs1]
-                        	softclipped_end1 = [int(re.split("[A-Z]", str(string))[-2]) if re.search(r"S$", string) else -1 for string in cigars_dcs1]
-                        	dist_start_read1 = [(pos - soft) if soft != -1 else thr + 1000 for soft, pos in zip(softclipped_start1, pos_read1)]
-                        	dist_end_read1 = [(length_read - pos - soft) if soft != -1 else thr + 1000 for soft, pos, length_read in zip(softclipped_end1, pos_read1, end_read1)]
-                        	# if read at both ends softclipped --> select end with smallest distance between mut position and softclipping
-                        	if any(ij is True for ij in softclipped_both_ends_idx1):
-                        		for nr, indx in enumerate(softclipped_both_ends_idx1):
-                        			if indx:
-                        				if dist_start_read1[nr] <= dist_end_read1[nr]:
-                        					dist_end_read1[nr] = thr + 1000 # use dist of start and set start to very large number
-                        				else:
-                        					dist_start_read1[nr] = thr + 1000 # use dist of end and set start to very large number
-                        	ratio_dist_start1 = safe_div(sum([True if x <= thr else False for x in dist_start_read1]), float(sum(softclipped_idx1))) >= threshold_reads
-                        	ratio_dist_end1 = safe_div(sum([True if x <= thr else False for x in dist_end_read1]), float(sum(softclipped_idx1))) >= threshold_reads
+                            softclipped_both_ends_idx1 = [True if (re.search(r"^[0-9]+S", string) and re.search(r"S$", string)) else False for string in cigars_dcs1]
+                            softclipped_start1 = [int(string.split("S")[0]) if re.search(r"^[0-9]+S", string) else -1 for string in cigars_dcs1]
+                            softclipped_end1 = [int(re.split("[A-Z]", str(string))[-2]) if re.search(r"S$", string) else -1 for string in cigars_dcs1]
+                            dist_start_read1 = [(pos - soft) if soft != -1 else thr + 1000 for soft, pos in zip(softclipped_start1, pos_read1)]
+                            dist_end_read1 = [(length_read - pos - soft) if soft != -1 else thr + 1000 for soft, pos, length_read in zip(softclipped_end1, pos_read1, end_read1)]
+                            # if read at both ends softclipped --> select end with smallest distance between mut position and softclipping
+                            if any(ij is True for ij in softclipped_both_ends_idx1):
+                                for nr, indx in enumerate(softclipped_both_ends_idx1):
+                                    if indx:
+                                        if dist_start_read1[nr] <= dist_end_read1[nr]:
+                                            dist_end_read1[nr] = thr + 1000  # use dist of start and set start to very large number
+                                        else:
+                                            dist_start_read1[nr] = thr + 1000  # use dist of end and set start to very large number
+                            ratio_dist_start1 = safe_div(sum([True if x <= thr else False for x in dist_start_read1]), float(sum(softclipped_idx1))) >= threshold_reads
+                            ratio_dist_end1 = safe_div(sum([True if x <= thr else False for x in dist_end_read1]), float(sum(softclipped_idx1))) >= threshold_reads
 
                         # mate 1 - SSCS ba
                         softclipped_idx4 = [True if re.search(r"^[0-9]+S", string) or re.search(r"S$", string) else False for string in cigars_dcs4]
                         ratio4 = safe_div(sum(softclipped_idx4), float(len(softclipped_idx4))) >= threshold_reads
                         if any(ij is True for ij in softclipped_idx4):
-                        	softclipped_both_ends_idx4 = [True if (re.search(r"^[0-9]+S", string) and re.search(r"S$", string)) else False for string in cigars_dcs4]
-                        	softclipped_start4 = [int(string.split("S")[0]) if re.search(r"^[0-9]+S", string) else -1 for string in cigars_dcs4]
-                        	softclipped_end4 = [int(re.split("[A-Z]", str(string))[-2]) if re.search(r"S$", string) else -1 for string in cigars_dcs4]
-                        	dist_start_read4 = [(pos - soft) if soft != -1 else thr + 1000 for soft, pos in zip(softclipped_start4, pos_read4)]
-                        	dist_end_read4 = [(length_read - pos - soft) if soft != -1 else thr + 1000 for soft, pos, length_read in zip(softclipped_end4, pos_read4, end_read4)]
-                        	# if read at both ends softclipped --> select end with smallest distance between mut position and softclipping
-                        	if any(ij is True for ij in softclipped_both_ends_idx4):
-                        		for nr, indx in enumerate(softclipped_both_ends_idx4):
-                        			if indx:
-                        				if dist_start_read4[nr] <= dist_end_read4[nr]:
-                        					dist_end_read4[nr] = thr + 1000 # use dist of start and set start to very large number
-                        				else:
-                        					dist_start_read4[nr] = thr + 1000 # use dist of end and set start to very large number
-                       		ratio_dist_start4 = safe_div(sum([True if x <= thr else False for x in dist_start_read4]), float(sum(softclipped_idx4))) >= threshold_reads
-                        	ratio_dist_end4 = safe_div(sum([True if x <= thr else False for x in dist_end_read4]), float(sum(softclipped_idx4))) >= threshold_reads
+                            softclipped_both_ends_idx4 = [True if (re.search(r"^[0-9]+S", string) and re.search(r"S$", string)) else False for string in cigars_dcs4]
+                            softclipped_start4 = [int(string.split("S")[0]) if re.search(r"^[0-9]+S", string) else -1 for string in cigars_dcs4]
+                            softclipped_end4 = [int(re.split("[A-Z]", str(string))[-2]) if re.search(r"S$", string) else -1 for string in cigars_dcs4]
+                            dist_start_read4 = [(pos - soft) if soft != -1 else thr + 1000 for soft, pos in zip(softclipped_start4, pos_read4)]
+                            dist_end_read4 = [(length_read - pos - soft) if soft != -1 else thr + 1000 for soft, pos, length_read in zip(softclipped_end4, pos_read4, end_read4)]
+                            # if read at both ends softclipped --> select end with smallest distance between mut position and softclipping
+                            if any(ij is True for ij in softclipped_both_ends_idx4):
+                                for nr, indx in enumerate(softclipped_both_ends_idx4):
+                                    if indx:
+                                        if dist_start_read4[nr] <= dist_end_read4[nr]:
+                                            dist_end_read4[nr] = thr + 1000  # use dist of start and set start to very large number
+                                        else:
+                                            dist_start_read4[nr] = thr + 1000  # use dist of end and set start to very large number
+                            ratio_dist_start4 = safe_div(sum([True if x <= thr else False for x in dist_start_read4]), float(sum(softclipped_idx4))) >= threshold_reads
+                            ratio_dist_end4 = safe_div(sum([True if x <= thr else False for x in dist_end_read4]), float(sum(softclipped_idx4))) >= threshold_reads
 
                         # mate 2 - SSCS ab
                         softclipped_idx2 = [True if re.search(r"^[0-9]+S", string) or re.search(r"S$", string) else False for string in cigars_dcs2]
@@ -664,14 +651,14 @@ def read2mut(argv):
                             softclipped_end2 = [int(re.split("[A-Z]", str(string))[-2]) if re.search(r"S$", string) else -1 for string in cigars_dcs2]
                             dist_start_read2 = [(pos - soft) if soft != -1 else thr + 1000 for soft, pos in zip(softclipped_start2, pos_read2)]
                             dist_end_read2 = [(length_read - pos - soft) if soft != -1 else thr + 1000 for soft, pos, length_read in zip(softclipped_end2, pos_read2, end_read2)]
-                        	# if read at both ends softclipped --> select end with smallest distance between mut position and softclipping
+                            # if read at both ends softclipped --> select end with smallest distance between mut position and softclipping
                             if any(ij is True for ij in softclipped_both_ends_idx2):
                                 for nr, indx in enumerate(softclipped_both_ends_idx2):
                                     if indx:
                                         if dist_start_read2[nr] <= dist_end_read2[nr]:
-                                            dist_end_read2[nr] = thr + 1000 # use dist of start and set start to very large number
+                                            dist_end_read2[nr] = thr + 1000  # use dist of start and set start to very large number
                                         else:
-                                            dist_start_read2[nr] = thr + 1000 # use dist of end and set start to very large number
+                                            dist_start_read2[nr] = thr + 1000  # use dist of end and set start to very large number
                             ratio_dist_start2 = safe_div(sum([True if x <= thr else False for x in dist_start_read2]), float(sum(softclipped_idx2))) >= threshold_reads
                             ratio_dist_end2 = safe_div(sum([True if x <= thr else False for x in dist_end_read2]), float(sum(softclipped_idx2))) >= threshold_reads
 
@@ -684,14 +671,14 @@ def read2mut(argv):
                             softclipped_end3 = [int(re.split("[A-Z]", str(string))[-2]) if re.search(r"S$", string) else -1 for string in cigars_dcs3]
                             dist_start_read3 = [(pos - soft) if soft != -1 else thr + 1000 for soft, pos in zip(softclipped_start3, pos_read3)]
                             dist_end_read3 = [(length_read - pos - soft) if soft != -1 else thr + 1000 for soft, pos, length_read in zip(softclipped_end3, pos_read3, end_read3)]
-                        	# if read at both ends softclipped --> select end with smallest distance between mut position and softclipping
+                            # if read at both ends softclipped --> select end with smallest distance between mut position and softclipping
                             if any(ij is True for ij in softclipped_both_ends_idx3):
                                 for nr, indx in enumerate(softclipped_both_ends_idx3):
                                     if indx:
                                         if dist_start_read3[nr] <= dist_end_read3[nr]:
-                                            dist_end_read3[nr] = thr + 1000 # use dist of start and set start to a larger number than thresh
+                                            dist_end_read3[nr] = thr + 1000  # use dist of start and set start to a larger number than thresh
                                         else:
-                                            dist_start_read3[nr] = thr + 1000 # use dist of end and set start to very large number
+                                            dist_start_read3[nr] = thr + 1000  # use dist of end and set start to very large number
                             ratio_dist_start3 = safe_div(sum([True if x <= thr else False for x in dist_start_read3]), float(sum(softclipped_idx3))) >= threshold_reads
                             ratio_dist_end3 = safe_div(sum([True if x <= thr else False for x in dist_end_read3]), float(sum(softclipped_idx3))) >= threshold_reads
 
@@ -707,10 +694,10 @@ def read2mut(argv):
                             contradictory = True
                         # softclipping tiers
                         # information of both mates available --> all reads for both mates and SSCS are softclipped
-                        elif (ratio1 & ratio4 & ratio2 & ratio3 & 
+                        elif (ratio1 & ratio4 & ratio2 & ratio3 &
                               (ratio_dist_start1 | ratio_dist_end1) & (ratio_dist_start4 | ratio_dist_end4) & (ratio_dist_start2 | ratio_dist_end2) & (ratio_dist_start3 | ratio_dist_end3) &
-                              all(float(ij) > 0. for ij in [alt1ff, alt2ff, alt3ff, alt4ff])): # all mates available
-                        	# if distance between softclipping and mutation is at start or end of the read smaller than threshold
+                              all(float(ij) > 0. for ij in [alt1ff, alt2ff, alt3ff, alt4ff])):  # all mates available
+                            # if distance between softclipping and mutation is at start or end of the read smaller than threshold
                             softclipped_mutation_allMates = True
                             softclipped_mutation_oneOfTwoMates = False
                             softclipped_mutation_oneOfTwoSSCS = False
@@ -726,13 +713,13 @@ def read2mut(argv):
                         # information of both mates available --> only one mate softclipped
                         elif (((ratio1 & ratio4 & (ratio_dist_start1 | ratio_dist_end1) & (ratio_dist_start4 | ratio_dist_end4)) |
                                (ratio2 & ratio3 & (ratio_dist_start2 | ratio_dist_end2) & (ratio_dist_start3 | ratio_dist_end3))) &
-                               all(float(ij) > 0. for ij in [alt1ff, alt2ff, alt3ff, alt4ff])): # all mates available
-                        	# if distance between softclipping and mutation is at start or end of the read smaller than threshold
-                            min_start1 = min(min([ij[0] for ij in ref_positions1]), min([ij[0] for ij in ref_positions4])) # red
-                            min_start2 = min(min([ij[0] for ij in ref_positions2]), min([ij[0] for ij in ref_positions3])) # blue
-                            max_end1 = max(max([ij[1] for ij in ref_positions1]), max([ij[1] for ij in ref_positions4])) # red
-                            max_end2 = max(max([ij[1] for ij in ref_positions2]), max([ij[1] for ij in ref_positions3])) # blue
-                            if (min_start1 > min_start2) or (max_end1 > max_end2): # if mate1 is red and mate2 is blue
+                              all(float(ij) > 0. for ij in [alt1ff, alt2ff, alt3ff, alt4ff])):  # all mates available
+                            # if distance between softclipping and mutation is at start or end of the read smaller than threshold
+                            min_start1 = min(min([ij[0] for ij in ref_positions1]), min([ij[0] for ij in ref_positions4]))  # red
+                            min_start2 = min(min([ij[0] for ij in ref_positions2]), min([ij[0] for ij in ref_positions3]))  # blue
+                            max_end1 = max(max([ij[1] for ij in ref_positions1]), max([ij[1] for ij in ref_positions4]))  # red
+                            max_end2 = max(max([ij[1] for ij in ref_positions2]), max([ij[1] for ij in ref_positions3]))  # blue
+                            if (min_start1 > min_start2) or (max_end1 > max_end2):  # if mate1 is red and mate2 is blue
                                 softclipped_mutation_oneOfTwoMates = False
                                 # blue mate at beginning softclipped
                                 if min_start1 > min_start2:
@@ -742,19 +729,19 @@ def read2mut(argv):
                                     read_len_median2 = read_len_median2 - n_spacer_barcode
                                     read_len_median3 = read_len_median3 - n_spacer_barcode
                                 # red mate at end softclipped
-                                if max_end1 > max_end2: 
+                                if max_end1 > max_end2:
                                     n_spacer_barcode = max_end1 - max_end2
                                     read_len_median1 = read_len_median1 - n_spacer_barcode
                                     read_len_median4 = read_len_median4 - n_spacer_barcode
-                            elif (min_start1 < min_start2) or (max_end1 < max_end2): # if mate1 is blue and mate2 is red
+                            elif (min_start1 < min_start2) or (max_end1 < max_end2):  # if mate1 is blue and mate2 is red
                                 softclipped_mutation_oneOfTwoMates = False
-                                if min_start1 < min_start2: 
+                                if min_start1 < min_start2:
                                     n_spacer_barcode = min_start2 - min_start1
                                     read_pos1 = read_pos1 - n_spacer_barcode
                                     read_pos4 = read_pos4 - n_spacer_barcode
                                     read_len_median1 = read_len_median1 - n_spacer_barcode
                                     read_len_median4 = read_len_median4 - n_spacer_barcode
-                                if max_end1 < max_end2: # if mate1 ends after mate 2 starts
+                                if max_end1 < max_end2:  # if mate1 ends after mate 2 starts
                                     n_spacer_barcode = max_end2 - max_end1
                                     read_len_median2 = read_len_median2 - n_spacer_barcode
                                     read_len_median3 = read_len_median3 - n_spacer_barcode
@@ -770,8 +757,8 @@ def read2mut(argv):
                             softclipped_mutation_oneOfTwoSSCS = False
                             softclipped_mutation_oneMate = False
                             softclipped_mutation_oneMateOneSSCS = False
-                            
-                            if softclipped_mutation_oneOfTwoMates is False: # check trimming tier
+
+                            if softclipped_mutation_oneOfTwoMates is False:  # check trimming tier
                                 if ((read_pos1 >= 0) and ((read_pos1 <= trim) | (abs(read_len_median1 - read_pos1) <= trim))):
                                     beg1 = total1new
                                     total1new = 0
@@ -805,8 +792,8 @@ def read2mut(argv):
                         # information of both mates available --> only one mate softclipped
                         elif (((ratio1 & (ratio_dist_start1 | ratio_dist_end1)) | (ratio4 & (ratio_dist_start4 | ratio_dist_end4))) &
                               ((ratio2 & (ratio_dist_start2 | ratio_dist_end2)) | (ratio3 & (ratio_dist_start3 | ratio_dist_end3))) &
-                               all(float(ij) > 0. for ij in [alt1ff, alt2ff, alt3ff, alt4ff])): # all mates available
-                        	# if distance between softclipping and mutation is at start or end of the read smaller than threshold
+                              all(float(ij) > 0. for ij in [alt1ff, alt2ff, alt3ff, alt4ff])):  # all mates available
+                            # if distance between softclipping and mutation is at start or end of the read smaller than threshold
                             softclipped_mutation_allMates = False
                             softclipped_mutation_oneOfTwoMates = False
                             softclipped_mutation_oneOfTwoSSCS = True
@@ -823,9 +810,9 @@ def read2mut(argv):
                         # information of one mate available --> all reads of one mate are softclipped
                         elif ((ratio1 & ratio4 & (ratio_dist_start1 | ratio_dist_end1) & (ratio_dist_start4 | ratio_dist_end4) &
                               all(float(ij) < 0. for ij in [alt2ff, alt3ff]) & all(float(ij) > 0. for ij in [alt1ff, alt4ff])) |
-                        	  (ratio2 & ratio3 & (ratio_dist_start2 | ratio_dist_end2) & (ratio_dist_start3 | ratio_dist_end3) &
-                        	  all(float(ij) < 0. for ij in [alt1ff, alt4ff]) & all(float(ij) > 0. for ij in [alt2ff, alt3ff]))): # all mates available
-                        	# if distance between softclipping and mutation is at start or end of the read smaller than threshold
+                              (ratio2 & ratio3 & (ratio_dist_start2 | ratio_dist_end2) & (ratio_dist_start3 | ratio_dist_end3) &
+                              all(float(ij) < 0. for ij in [alt1ff, alt4ff]) & all(float(ij) > 0. for ij in [alt2ff, alt3ff]))):  # all mates available
+                            # if distance between softclipping and mutation is at start or end of the read smaller than threshold
                             softclipped_mutation_allMates = False
                             softclipped_mutation_oneOfTwoMates = False
                             softclipped_mutation_oneOfTwoSSCS = False
@@ -841,9 +828,9 @@ def read2mut(argv):
                         # information of one mate available --> only one SSCS is softclipped
                         elif ((((ratio1 & (ratio_dist_start1 | ratio_dist_end1)) | (ratio4 & (ratio_dist_start4 | ratio_dist_end4))) &
                               (all(float(ij) < 0. for ij in [alt2ff, alt3ff]) & all(float(ij) > 0. for ij in [alt1ff, alt4ff]))) |
-                        	  (((ratio2 & (ratio_dist_start2 | ratio_dist_end2)) | (ratio3 & (ratio_dist_start3 | ratio_dist_end3))) &
-                        	  (all(float(ij) < 0. for ij in [alt1ff, alt4ff]) & all(float(ij) < 0. for ij in [alt2ff, alt3ff])))): # all mates available
-                        	# if distance between softclipping and mutation is at start or end of the read smaller than threshold
+                              (((ratio2 & (ratio_dist_start2 | ratio_dist_end2)) | (ratio3 & (ratio_dist_start3 | ratio_dist_end3))) &
+                              (all(float(ij) < 0. for ij in [alt1ff, alt4ff]) & all(float(ij) < 0. for ij in [alt2ff, alt3ff])))):  # all mates available
+                            # if distance between softclipping and mutation is at start or end of the read smaller than threshold
                             softclipped_mutation_allMates = False
                             softclipped_mutation_oneOfTwoMates = False
                             softclipped_mutation_oneOfTwoSSCS = False
@@ -961,7 +948,7 @@ def read2mut(argv):
                             counter_tier4 += 1
                             tier_dict[key1]["tier 4"] += 1
 
-                        	# assign tiers
+                            # assign tiers
                             if ((all(int(ij) >= 3 for ij in [total1new_trim, total4new_trim]) &
                                  all(float(ij) >= 0.75 for ij in [alt1ff_trim, alt4ff_trim])) |
                                 (all(int(ij) >= 3 for ij in [total2new_trim, total3new_trim]) &
@@ -1112,23 +1099,23 @@ def read2mut(argv):
                         if (read_pos3 == -1):
                             read_pos3 = read_len_median3 = None
                         line = (var_id, tier, key2[:-5], 'ab1.ba2', read_pos1, read_pos4, read_len_median1, read_len_median4, dcs_median) + details1 + (sscs_mut_ab, sscs_mut_ba, sscs_ref_ab, sscs_ref_ba, add_mut14, chimera)
-                        #ws1.write_row(row, 0, line)
-                        #csv_writer.writerow(line)
+                        # ws1.write_row(row, 0, line)
+                        # csv_writer.writerow(line)
                         line2 = ("", "", key2[:-5], 'ab2.ba1', read_pos2, read_pos3, read_len_median2, read_len_median3, dcs_median) + details2 + (sscs_mut_ab, sscs_mut_ba, sscs_ref_ab, sscs_ref_ba, add_mut23, chimera)
-                        #ws1.write_row(row + 1, 0, line2)
-                        #csv_writer.writerow(line2)
+                        # ws1.write_row(row + 1, 0, line2)
+                        # csv_writer.writerow(line2)
 
-                        #ws1.conditional_format('L{}:M{}'.format(row + 1, row + 2),
+                        # ws1.conditional_format('L{}:M{}'.format(row + 1, row + 2),
                         #                       {'type': 'formula',
                         #                        'criteria': '=OR($B${}="1.1", $B${}="1.2")'.format(row + 1, row + 1),
                         #                        'format': format1,
                         #                        'multi_range': 'L{}:M{} T{}:U{} B{}'.format(row + 1, row + 2, row + 1, row + 2, row + 1, row + 2)})
-                        #ws1.conditional_format('L{}:M{}'.format(row + 1, row + 2),
+                        # ws1.conditional_format('L{}:M{}'.format(row + 1, row + 2),
                         #                       {'type': 'formula',
                         #                        'criteria': '=OR($B${}="2.1", $B${}="2.2", $B${}="2.3", $B${}="2.4", $B${}="2.5")'.format(row + 1, row + 1, row + 1, row + 1, row + 1),
                         #                        'format': format3,
                         #                        'multi_range': 'L{}:M{} T{}:U{} B{}'.format(row + 1, row + 2, row + 1, row + 2, row + 1, row + 2)})
-                        #ws1.conditional_format('L{}:M{}'.format(row + 1, row + 2),
+                        # ws1.conditional_format('L{}:M{}'.format(row + 1, row + 2),
                         #                       {'type': 'formula',
                         #                        'criteria': '=$B${}>="3"'.format(row + 1),
                         #                        'format': format2,
@@ -1177,27 +1164,26 @@ def read2mut(argv):
                 csv_writer.writerow(line2)
 
                 ws1.conditional_format('L{}:M{}'.format(row_number + 1, row_number + 2),
-                                           {'type': 'formula',
-                                            'criteria': '=OR($B${}="1.1", $B${}="1.2")'.format(row_number + 1, row_number + 1),
-                                            'format': format1,
-                                            'multi_range': 'L{}:M{} T{}:U{} B{}'.format(row_number + 1, row_number + 2, row_number + 1, row_number + 2, row_number + 1, row_number + 2)})
+                                       {'type': 'formula',
+                                        'criteria': '=OR($B${}="1.1", $B${}="1.2")'.format(row_number + 1, row_number + 1),
+                                        'format': format1,
+                                        'multi_range': 'L{}:M{} T{}:U{} B{}'.format(row_number + 1, row_number + 2, row_number + 1, row_number + 2, row_number + 1, row_number + 2)})
                 ws1.conditional_format('L{}:M{}'.format(row_number + 1, row_number + 2),
-                                           {'type': 'formula',
-                                            'criteria': '=OR($B${}="2.1", $B${}="2.2", $B${}="2.3", $B${}="2.4", $B${}="2.5")'.format(row_number + 1, row_number + 1, row_number + 1, row_number + 1, row_number + 1),
-                                            'format': format3,
-                                            'multi_range': 'L{}:M{} T{}:U{} B{}'.format(row_number + 1, row_number + 2, row_number + 1, row_number + 2, row_number + 1, row_number + 2)})
+                                       {'type': 'formula',
+                                        'criteria': '=OR($B${}="2.1", $B${}="2.2", $B${}="2.3", $B${}="2.4", $B${}="2.5")'.format(row_number + 1, row_number + 1, row_number + 1, row_number + 1, row_number + 1),
+                                        'format': format3,
+                                        'multi_range': 'L{}:M{} T{}:U{} B{}'.format(row_number + 1, row_number + 2, row_number + 1, row_number + 2, row_number + 1, row_number + 2)})
                 ws1.conditional_format('L{}:M{}'.format(row_number + 1, row_number + 2),
-                                           {'type': 'formula',
-                                            'criteria': '=$B${}>="3"'.format(row_number + 1),
-                                            'format': format2,
-                                            'multi_range': 'L{}:M{} T{}:U{} B{}'.format(row_number + 1, row_number + 2, row_number + 1, row_number + 2, row_number + 1, row_number + 2)})                
-	
+                                       {'type': 'formula',
+                                        'criteria': '=$B${}>="3"'.format(row_number + 1),
+                                        'format': format2,
+                                        'multi_range': 'L{}:M{} T{}:U{} B{}'.format(row_number + 1, row_number + 2, row_number + 1, row_number + 2, row_number + 1, row_number + 2)})
     # sheet 2
     if chimera_correction:
         header_line2 = ('variant ID', 'cvrg', 'AC alt (all tiers)', 'AF (all tiers)', 'cvrg (tiers 1.1-2.5)', 'AC alt (tiers 1.1-2.5)', 'AF (tiers 1.1-2.5)', 'chimera-corrected cvrg (tiers 1.1-2.5)', 'chimeras in AC alt (tiers 1.1-2.5)', 'chimera-corrected AF (tiers 1.1-2.5)', 'AC alt (orginal DCS)', 'AF (original DCS)',
-                    'tier 1.1', 'tier 1.2', 'tier 2.1', 'tier 2.2', 'tier 2.3', 'tier 2.4', 'tier 2.5',
-                    'tier 3.1', 'tier 3.2', 'tier 4', 'tier 5.1', 'tier 5.2', 'tier 5.3', 'tier 5.4', 'tier 5.5', 'tier 6', 'tier 7', 'AF 1.1-1.2', 'AF 1.1-2.1', 'AF 1.1-2.2',
-                    'AF 1.1-2.3', 'AF 1.1-2.4', 'AF 1.1-2.5', 'AF 1.1-3.1', 'AF 1.1-3.2', 'AF 1.1-4', 'AF 1.1-5.1', 'AF 1.1-5.2', 'AF 1.1-5.3', 'AF 1.1-5.4', 'AF 1.1-5.5', 'AF 1.1-6', 'AF 1.1-7')
+                        'tier 1.1', 'tier 1.2', 'tier 2.1', 'tier 2.2', 'tier 2.3', 'tier 2.4', 'tier 2.5',
+                        'tier 3.1', 'tier 3.2', 'tier 4', 'tier 5.1', 'tier 5.2', 'tier 5.3', 'tier 5.4', 'tier 5.5', 'tier 6', 'tier 7', 'AF 1.1-1.2', 'AF 1.1-2.1', 'AF 1.1-2.2',
+                        'AF 1.1-2.3', 'AF 1.1-2.4', 'AF 1.1-2.5', 'AF 1.1-3.1', 'AF 1.1-3.2', 'AF 1.1-4', 'AF 1.1-5.1', 'AF 1.1-5.2', 'AF 1.1-5.3', 'AF 1.1-5.4', 'AF 1.1-5.5', 'AF 1.1-6', 'AF 1.1-7')
     else:
         header_line2 = ('variant ID', 'cvrg', 'AC alt (all tiers)', 'AF (all tiers)', 'cvrg (tiers 1.1-2.5)', 'AC alt (tiers 1.1-2.5)', 'AF (tiers 1.1-2.5)', 'AC alt (orginal DCS)', 'AF (original DCS)',
                         'tier 1.1', 'tier 1.2', 'tier 2.1', 'tier 2.2', 'tier 2.3', 'tier 2.4', 'tier 2.5',
@@ -1228,8 +1214,8 @@ def read2mut(argv):
                 if len(used_tiers) > 1:
                     cum = safe_div(sum(used_tiers), cvrg)
                     cum_af.append(cum)
-            if sum(used_tiers) == 0: # skip mutations that are filtered by the VA in the first place
-            	continue
+            if sum(used_tiers) == 0:  # skip mutations that are filtered by the VA in the first place
+                continue
             lst.extend([sum(used_tiers), safe_div(sum(used_tiers), cvrg)])
             lst.extend([(cvrg - sum(used_tiers[-10:])), sum(used_tiers[0:7]), safe_div(sum(used_tiers[0:7]), (cvrg - sum(used_tiers[-10:])))])
             if chimera_correction:
@@ -1257,7 +1243,7 @@ def read2mut(argv):
 
     # sheet 3
     sheet3 = [("tier 1.1", counter_tier11), ("tier 1.2", counter_tier12), ("tier 2.1", counter_tier21),
-              ("tier 2.2", counter_tier22), ("tier 2.3", counter_tier23), ("tier 2.4", counter_tier24), ("tier 2.5", counter_tier25), 
+              ("tier 2.2", counter_tier22), ("tier 2.3", counter_tier23), ("tier 2.4", counter_tier24), ("tier 2.5", counter_tier25),
               ("tier 3.1", counter_tier31), ("tier 3.2", counter_tier32), ("tier 4", counter_tier4),
               ("tier 5.1", counter_tier51), ("tier 5.2", counter_tier52),
               ("tier 5.3", counter_tier53), ("tier 5.4", counter_tier54), ("tier 5.5", counter_tier55), ("tier 6", counter_tier6), ("tier 7", counter_tier7)]
@@ -1403,4 +1389,3 @@ def read2mut(argv):
 
 if __name__ == '__main__':
     sys.exit(read2mut(sys.argv))
-

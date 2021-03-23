@@ -72,16 +72,12 @@ def mut2read(argv):
     for variant in VCF(file1):
         chrom = variant.CHROM
         stop_pos = variant.start
-        #chrom_stop_pos = str(chrom) + "#" + str(stop_pos)
         ref = variant.REF
         if len(variant.ALT) == 0:
             continue
         else:
             alt = variant.ALT[0]
-        print(alt)
         chrom_stop_pos = str(chrom) + "#" + str(stop_pos) + "#" + ref + "#" + alt
-
-
         dcs_len = []
         if len(ref) == len(alt):
             for pileupcolumn in bam.pileup(chrom, stop_pos - 1, stop_pos + 1, max_depth=100000000):
@@ -152,4 +148,3 @@ def mut2read(argv):
 
 if __name__ == '__main__':
     sys.exit(mut2read(sys.argv))
-
