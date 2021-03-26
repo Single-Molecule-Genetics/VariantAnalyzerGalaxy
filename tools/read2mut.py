@@ -551,7 +551,7 @@ def read2mut(argv):
                     used_keys.append(key2[:-5])
                     counts_mut += 1
                     if (alt1f + alt2f + alt3f + alt4f) > 0.5:
-                    	total1new_trim, total2new_trim, total3new_trim, total4new_trim = total1new, total2new, total3new, total4new
+                        total1new_trim, total2new_trim, total3new_trim, total4new_trim = total1new, total2new, total3new, total4new
                         if total1new == 0:
                             ref1f = alt1f = None
                             alt1ff = -1
