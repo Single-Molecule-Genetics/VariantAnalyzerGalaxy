@@ -256,7 +256,7 @@ def read2mut(argv):
     else:
         pure_tags_dict_short = pure_tags_dict
 
-    csv_data = open(outputFile_csv, "wb")
+    csv_data = open(outputFile_csv, "w")
     csv_writer = csv.writer(csv_data, delimiter=",")
 
     # output summary with threshold
