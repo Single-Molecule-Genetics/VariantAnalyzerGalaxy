@@ -320,7 +320,7 @@ def read2mut(argv):
             ref = mut_array[i, 2]
             alt = mut_array[i, 3]
             dcs_median = cvrg_dict[key1][2]
-            whole_array = pure_tags_dict_short[key1].keys()
+            whole_array = list(pure_tags_dict_short[key1].keys())
 
             tier_dict[key1] = {}
             values_tier_dict = [("tier 1.1", 0), ("tier 1.2", 0), ("tier 2.1", 0), ("tier 2.2", 0), ("tier 2.3", 0), ("tier 2.4", 0), ("tier 2.5", 0),
@@ -604,7 +604,11 @@ def read2mut(argv):
 
                         # mate 1 - SSCS ab
                         softclipped_idx1 = [True if re.search(r"^[0-9]+S", string) or re.search(r"S$", string) else False for string in cigars_dcs1]
-                        ratio1 = safe_div(sum(softclipped_idx1), float(len(softclipped_idx1))) >= threshold_reads
+                        safe_div_result = safe_div(sum(softclipped_idx1), float(len(softclipped_idx1)))
+                        if (safe_div_result == None):
+                            ratio1 = False
+                        else:
+                            ratio1 = safe_div_result >= threshold_reads
                         if any(ij is True for ij in softclipped_idx1):
                             softclipped_both_ends_idx1 = [True if (re.search(r"^[0-9]+S", string) and re.search(r"S$", string)) else False for string in cigars_dcs1]
                             softclipped_start1 = [int(string.split("S")[0]) if re.search(r"^[0-9]+S", string) else -1 for string in cigars_dcs1]
@@ -624,7 +628,11 @@ def read2mut(argv):
 
                         # mate 1 - SSCS ba
                         softclipped_idx4 = [True if re.search(r"^[0-9]+S", string) or re.search(r"S$", string) else False for string in cigars_dcs4]
-                        ratio4 = safe_div(sum(softclipped_idx4), float(len(softclipped_idx4))) >= threshold_reads
+                        safe_div_result = safe_div(sum(softclipped_idx4), float(len(softclipped_idx4)))
+                        if (safe_div_result == None):
+                            ratio4 = False
+                        else:
+                            ratio4 = safe_div_result >= threshold_reads
                         if any(ij is True for ij in softclipped_idx4):
                             softclipped_both_ends_idx4 = [True if (re.search(r"^[0-9]+S", string) and re.search(r"S$", string)) else False for string in cigars_dcs4]
                             softclipped_start4 = [int(string.split("S")[0]) if re.search(r"^[0-9]+S", string) else -1 for string in cigars_dcs4]
@@ -644,7 +652,11 @@ def read2mut(argv):
 
                         # mate 2 - SSCS ab
                         softclipped_idx2 = [True if re.search(r"^[0-9]+S", string) or re.search(r"S$", string) else False for string in cigars_dcs2]
-                        ratio2 = safe_div(sum(softclipped_idx2), float(len(softclipped_idx2))) >= threshold_reads
+                        safe_div_result = safe_div(sum(softclipped_idx2), float(len(softclipped_idx2)))
+                        if (safe_div_result == None):
+                            ratio2 = False
+                        else:
+                            ratio2 = safe_div_result >= threshold_reads
                         if any(ij is True for ij in softclipped_idx2):
                             softclipped_both_ends_idx2 = [True if (re.search(r"^[0-9]+S", string) and re.search(r"S$", string)) else False for string in cigars_dcs2]
                             softclipped_start2 = [int(string.split("S")[0]) if re.search(r"^[0-9]+S", string) else -1 for string in cigars_dcs2]
@@ -664,7 +676,11 @@ def read2mut(argv):
 
                         # mate 2 - SSCS ba
                         softclipped_idx3 = [True if re.search(r"^[0-9]+S", string) or re.search(r"S$", string) else False for string in cigars_dcs3]
-                        ratio3 = safe_div(sum(softclipped_idx3), float(len(softclipped_idx3))) >= threshold_reads
+                        safe_div_result = safe_div(sum(softclipped_idx3), float(len(softclipped_idx3)))
+                        if (safe_div_result == None):
+                            ratio3 = False
+                        else:
+                            ratio3 = safe_div_result >= threshold_reads
                         if any(ij is True for ij in softclipped_idx3):
                             softclipped_both_ends_idx3 = [True if (re.search(r"^[0-9]+S", string) and re.search(r"S$", string)) else False for string in cigars_dcs3]
                             softclipped_start3 = [int(string.split("S")[0]) if re.search(r"^[0-9]+S", string) else -1 for string in cigars_dcs3]
